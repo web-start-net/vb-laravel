@@ -1,0 +1,8 @@
+/vendor/
+/.phpunit.result.cache
+/.phpunit.cache/
+*.log
+.DS_Store
+Thumbs.db
+/release/
+/.release-staging/
