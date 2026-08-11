@@ -1,0 +1,7 @@
+{
+    "id": "VB/AI Thread Assistant",
+    "title": "AI Thread Assistant",
+    "version": "1.0.0",
+    "runtime": "^0.1",
+    "provider": "VB\\AIThreadAssistant\\Provider"
+}
