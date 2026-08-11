@@ -10,7 +10,7 @@ final class ThreadAssistantController {
     }
     public function generate(int $nodeid,string $token): array {
         $user=vb()->user(); if (!$this->authorized($user)||!$this->csrf($token,$user)) return $this->index($nodeid,'Request denied.');
-        try { $content=vb()->api('content','getContent',[$nodeid]); $text=$this->text($content); $client=new GeminiClient(); $summary=$client->summarize($text); ThreadSummary::query()->updateOrCreate(['nodeid'=>$nodeid],['summary'=>$summary,'model'=>(string)\vB::getDatastore()->getOption('aithreadassistant_gemini_model'),'generated_at'=>date('Y-m-d H:i:s')]); return $this->index($nodeid); } catch (\Throwable $e) { return $this->index($nodeid,$e->getMessage()); }
+        try { $content=vb()->api('content_text','getContent',[$nodeid]); $text=$this->text($content); $client=new GeminiClient(); $summary=$client->summarize($text); ThreadSummary::query()->updateOrCreate(['nodeid'=>$nodeid],['summary'=>$summary,'model'=>(string)\vB::getDatastore()->getOption('aithreadassistant_gemini_model'),'generated_at'=>date('Y-m-d H:i:s')]); return $this->index($nodeid); } catch (\Throwable $e) { return $this->index($nodeid,$e->getMessage()); }
     }
     private function text($content): string { $rows=[]; foreach ((array)$content as $row) { if (!is_array($row)) continue; $title=(string)($row['title']??''); $body=(string)($row['rawtext']??$row['pagetext']??$row['text']??''); if($title!==''||$body!=='')$rows[]=$title."\n".$body; } return substr(implode("\n\n",$rows),0,50000); }
     private function authorized(array $u): bool{return (int)($u['userid']??0)>0&&(bool)\vB::getDatastore()->getOption('aithreadassistant_enabled')&&vb()->can('can_use_ai_thread_assistant','genericpermissions2');}
