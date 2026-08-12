@@ -2,7 +2,12 @@
 
 declare(strict_types=1);
 
-$vbulletinCore = 'C:/Users/MeisaM/Documents/vbulletin/source/core';
+$vbulletinCore = getenv('VBLARAVEL_VB_CORE') ?: '';
+
+if ($vbulletinCore === '' || !is_dir($vbulletinCore)) {
+    echo "Skipped: set VBLARAVEL_VB_CORE to an isolated vBulletin core path.\n";
+    exit(0);
+}
 
 define('CWD', $vbulletinCore);
 define('DIR', $vbulletinCore);
@@ -18,7 +23,7 @@ $_SERVER['QUERY_STRING'] = '';
 
 require_once $vbulletinCore . '/vb/vb.php';
 vB::init();
-vB::setConfigFile('../../../ChatGPT/vb-laravel/tests/vb-config.php');
+vB::setConfigFile(__DIR__ . '/vb-config.php');
 
 require_once dirname($vbulletinCore) . '/includes/api/interfaceabstract.php';
 require_once dirname($vbulletinCore) . '/includes/api/interface/collapsed.php';

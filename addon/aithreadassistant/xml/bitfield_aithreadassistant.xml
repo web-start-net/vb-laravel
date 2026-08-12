@@ -1,1 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?><bitfields product="aithreadassistant" ignoregroups=""><bitfielddefs><group name="ugp"><group name="genericpermissions2"><bitfield name="can_use_ai_thread_assistant" group="general_permissions" phrase="aithreadassistant_can_use" install="2,6">64</bitfield></group></group></bitfielddefs></bitfields>

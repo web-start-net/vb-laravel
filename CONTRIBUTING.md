@@ -8,4 +8,4 @@ Keep changes small and compatible with the frozen 0.1 architecture.
 - Do not add Laravel subsystems that are outside the current scope.
 - Run the regression checks before submitting a change.
 
-The `addon/vblaraveltest` fixture is intentionally small and is used for integration validation, not as production architecture.
+Keep the public repository focused on the Runtime and runtime-focused regression coverage. Product/add-on implementations belong in their own repositories.

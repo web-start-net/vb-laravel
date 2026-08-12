@@ -1,7 +1,0 @@
-{
-    "id": "VB/Bookmarks",
-    "title": "VB Bookmarks",
-    "version": "1.0.0",
-    "runtime": "^0.1",
-    "provider": "VB\\Bookmarks\\Provider"
-}

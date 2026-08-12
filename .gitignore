@@ -1,4 +1,5 @@
 /vendor/
+/addon/
 /.phpunit.result.cache
 /.phpunit.cache/
 *.log

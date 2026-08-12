@@ -1,7 +1,0 @@
-{
-    "id": "VB/LaravelTest",
-    "title": "VB Laravel Test",
-    "version": "1.0.0",
-    "runtime": "^0.1",
-    "provider": "VB\\LaravelTest\\Provider"
-}

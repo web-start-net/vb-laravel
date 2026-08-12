@@ -34,7 +34,7 @@ abstract class vB
         return new class {
             public function hasPermission(string $group, string $permission): bool
             {
-                return $group === 'genericpermissions' && $permission === 'can_use_bookmarks';
+                return $group === 'genericpermissions' && $permission === 'can_use_runtime';
             }
         };
     }
@@ -49,7 +49,13 @@ abstract class vB5_Route
 }
 
 $package = dirname(__DIR__) . '/package/core/packages/vblaravel';
-$manifest = json_decode((string) file_get_contents(dirname(__DIR__) . '/addon/vblaraveltest/vb-addon.json'), true, 512, JSON_THROW_ON_ERROR);
+$manifest = [
+    'id' => 'Vendor/AddOn',
+    'title' => 'Example Add-on',
+    'version' => '1.0.0',
+    'runtime' => '^0.1',
+    'provider' => 'Vendor\\AddOn\\Provider',
+];
 assert(array_keys($manifest) === ['id', 'title', 'version', 'runtime', 'provider']);
 assert($manifest['runtime'] === '^0.1');
 require_once $package . '/bootstrap.php';
@@ -59,8 +65,8 @@ assert(class_exists(VbLaravel\AddonLoader::class, false));
 assert(VbLaravel\Runtime::state() === VbLaravel\Runtime::UNLOADED);
 assert(class_exists('Illuminate\\Container\\Container', false) === false);
 assert(vb()->user()['method'] === 'fetchCurrentUserinfo');
-assert(vb()->can('can_use_bookmarks') === true);
-assert(vb()->url('vbbookmarks', ['nodeid' => 2]) === 'vbbookmarks:nodeid=2');
+assert(vb()->can('can_use_runtime') === true);
+assert(vb()->url('runtime_example', ['nodeid' => 2]) === 'runtime_example:nodeid=2');
 assert(VbLaravel\Runtime::state() === VbLaravel\Runtime::UNLOADED);
 assert(class_exists('Illuminate\\Container\\Container', false) === false);
 
