@@ -1,189 +1,194 @@
 # VB Laravel
 
-VB Laravel is a lightweight Illuminate-powered runtime and compatibility bridge that allows developers to build modern vBulletin 6 add-ons using familiar Laravel conventions without modifying the vBulletin core.
+**Develop modern vBulletin 6 add-ons with the elegance and power of Laravel.**
 
-This is not a Laravel rewrite of vBulletin and not a separate Laravel application. It does not replace vBulletin authentication, routing, templates, permissions, users, phrases, Site Builder, or AdminCP. VB Laravel provides Illuminate capabilities for add-on business and data logic while vBulletin remains authoritative for native forum functionality.
+VB Laravel is a lightweight **Illuminate-powered runtime and bridge** that brings modern Laravel conventions — such as **Eloquent ORM, Collections, and Service Providers** — into vBulletin 6, **without modifying a single line of the vBulletin core**.
 
-## Why VB Laravel?
+---
 
-Traditional vBulletin add-on development requires learning many vBulletin-specific APIs and patterns. VB Laravel gives developers a simple mental model: `Laravel + vb()`.
+## 💡 The Concept: `Laravel + vb()`
 
-Illuminate handles Eloquent, relationships, query building, collections, transactions, service/container logic, and compatible future Illuminate capabilities. `vb()` handles the current user, permissions, nodes/content, phrases, URLs, API access, and other native integrations.
+Developing vBulletin add-ons traditionally required complex SQL arrays (`querydefs.php`), manual JOINs, and unfamiliar procedural APIs. 
 
-## Architecture
+**VB Laravel simplifies development into an intuitive mental model:**
 
-```text
-vBulletin 6
-    |
-    +-- Native vBulletin
-    |     Users
-    |     Permissions
-    |     Routing
-    |     Templates
-    |     Phrases
-    |     Site Builder
-    |
-    +-- VB Laravel Runtime
-          |
-          +-- Illuminate
-          +-- AddonLoader
-          +-- VB Bridge
-                 |
-                 +-- vb()
+- **Laravel (Illuminate)** powers your data layer: Eloquent models, relationships, collections, and transactions.
+- **`vb()`** bridges directly to native vBulletin features: current user, permissions, phrases, nodes, and Site Builder.
+
+```php
+// Query custom data cleanly with Eloquent
+$form = Form::with('fields')->where('enabled', true)->findOrFail($id);
+
+// Access native vBulletin context seamlessly
+$user = vb()->user();
+$userId = vb()->userId();
+
+if (!vb()->can('can_submit_forms')) {
+    throw new Exception('Permission denied.');
+}
 ```
 
-The package bootstrap registers `vb()` and the runtime classes but does not boot Illuminate. Normal vBulletin requests therefore do not load Illuminate unnecessarily. Call `Runtime::boot()` explicitly when an add-on needs it.
+---
 
-## Requirements
+## 🚀 Key Features in 0.2.0
 
-- vBulletin 6.2.2 has been tested.
-- PHP 8.2 or newer is required.
-- VB Laravel Runtime 0.1.0.
-- Illuminate 11.x is the current baseline, controlled by the Runtime.
+- ⚡ **Zero Overhead (Lazy Boot)**: Illuminate only boots when an add-on specifically requests it. Normal forum traffic is unaffected.
+- 📦 **Dynamic PSR-4 Autoloading**: Add-on models, controllers, and services are automatically autoloaded. No manual `require_once` statements needed!
+- 🗄️ **Centralized Eloquent**: Database connection is established automatically with `utf8mb4` encoding using native vBulletin settings (`vB::getConfig()`).
+- 🛠️ **Developer Helpers**:
+  - `collect($items)` — Laravel Collection magic for arrays and datasets.
+  - `db('table')` — Fluent Query Builder shortcut.
+  - `app()` — Access the dependency injection container.
+  - `vb()->userId()` & `vb()->isLoggedIn()` — Quick authentication helpers.
+  - `vb()->setting('name')` — Instant access to vBulletin options.
+  - `vb()->session()` — Direct session access.
 
-Version 0.1.0 is experimental. Compatibility and public APIs may change before 1.0.0.
+---
 
-## Installation
+## 🏛️ Architecture
 
-For a site administrator:
+```text
+vBulletin 6 Core
+    │
+    ├── Native vBulletin (Users, Permissions, Routing, Templates, Phrases)
+    │
+    └── VB Laravel Runtime (core/packages/vblaravel/)
+          │
+          ├── Illuminate Container & Collections
+          ├── Eloquent ORM (Capsule Manager)
+          ├── Dynamic AddonLoader (PSR-4)
+          └── Native Bridge (vb())
+```
 
-1. Upload `package/core/packages/vblaravel/` to `core/packages/vblaravel/` in the vBulletin installation.
-2. Import the Runtime Product XML or install the product using the normal vBulletin Product Manager workflow.
-3. Upload a compatible add-on package to its own `core/packages/<addon>/` directory.
-4. Import/install that add-on's native vBulletin Product XML.
+---
 
-The site administrator does not need Composer, `composer install`, Artisan, npm, or a Laravel `.env` file. The distributable package contains its private Composer dependencies.
+## 📦 Installation
 
-## Creating a VB Laravel add-on
+For forum administrators:
 
-An add-on can use the following minimal structure:
+1. Upload the `package/core/packages/vblaravel/` directory to `core/packages/vblaravel/` on your forum server.
+2. In **AdminCP**, go to **Products & Plugins** → **Manage Products** → **Add/Import Product**.
+3. Import `packages/vblaravel/xml/product_vblaravel.xml` (Allow Overwrite: `Yes`).
+4. Install any compatible add-on into `core/packages/<youraddon>/`.
+
+> **Note**: No Composer, Node.js, or command-line setup is required on production servers. All runtime dependencies are self-contained.
+
+---
+
+## 🛠️ Building an Add-on in 3 Steps
+
+### 1. Structure
+
+Create your package under `core/packages/myaddon/`:
 
 ```text
 core/packages/myaddon/
 ├── product.php
 ├── vb-addon.json
 ├── src/
+│   ├── Provider.php
+│   └── Models/
+│       └── Bookmark.php
 └── xml/
+    └── product_myaddon.xml
 ```
 
-Native vBulletin Product XML and product metadata remain the source of truth for native installation, routing, templates, phrases, permissions, settings, and Site Builder integration.
+### 2. Manifest (`vb-addon.json`)
 
-### `vb-addon.json`
+Declare your add-on identity and service provider:
 
 ```json
 {
-  "id": "Vendor/AddOn",
-  "title": "Example Add-on",
+  "id": "Vendor/MyAddon",
+  "title": "My Add-on",
   "version": "1.0.0",
-  "runtime": "^0.1",
-  "provider": "Vendor\\AddOn\\Provider"
+  "runtime": "^0.2",
+  "provider": "Vendor\\MyAddon\\Provider"
 }
 ```
 
-`id` identifies the add-on, `title` is its display name, `version` is the add-on version, `runtime` declares the compatible VB Laravel Runtime line, and `provider` names the provider class loaded by `AddonLoader`.
-
-## Minimal example
+### 3. Service Provider (`src/Provider.php`)
 
 ```php
-$form = Form::with('fields')->findOrFail($id);
+namespace Vendor\MyAddon;
 
-$user = vb()->user();
+use Illuminate\Support\ServiceProvider;
 
-if (!vb()->can('some_permission')) {
-    // deny
+class Provider extends ServiceProvider
+{
+    public function register(): void
+    {
+        // Bind services to the container
+    }
+
+    public function boot(): void
+    {
+        // Eloquent is already booted and connected!
+    }
 }
 ```
 
-The example is illustrative. Native vBulletin still supplies the request lifecycle, authorization context, and presentation integration.
+### 4. Use Eloquent Models with Zero Boilerplate (`src/Models/Bookmark.php`)
 
-## Public Bridge API
+```php
+namespace Vendor\MyAddon\Models;
 
-The current public bridge methods are:
+use Illuminate\Database\Eloquent\Model;
 
-- `vb()->user()` — fetches the current vBulletin user information.
-- `vb()->request()` — fetches native request information.
-- `vb()->phrase(string $name)` — fetches a vBulletin phrase.
-- `vb()->node(int $id)` — fetches a native node.
-- `vb()->api(string $controller, ?string $method = null, array $arguments = [])` — accesses a native API or calls one method.
-- `vb()->can(string $permission, string $group = 'genericpermissions')` — checks a native permission.
-- `vb()->url(string $route, array $data = [], array $extra = [])` — builds a native vBulletin URL.
+class Bookmark extends Model
+{
+    protected $table = 'myaddon_bookmarks';
+    protected $primaryKey = 'bookmarkid';
+    protected $guarded = [];
+}
+```
 
-These are the implemented 0.1 bridge APIs. Planned or unimplemented APIs are not part of the public contract.
+Because of dynamic PSR-4 autoloading, you can instantly use `Vendor\MyAddon\Models\Bookmark` in your controllers or vBulletin hooks without any manual `require_once`!
 
-## Runtime API
+---
 
-- `Runtime::VERSION` — current Runtime version (`0.1.0`).
-- `Runtime::state()` — returns `unloaded`, `booting`, `booted`, or `failed`.
-- `Runtime::isBooted()` — reports whether Illuminate has booted successfully.
-- `Runtime::boot(?string $vendorPath = null)` — explicitly loads the private Composer autoloader and returns the Illuminate Container.
-- `Runtime::container()` — returns the existing Container; it throws until `Runtime::boot()` has been called.
+## 📖 Public Bridge API Reference
 
-Calling `Runtime::boot()` twice is safe and returns the same Container. Loading `bootstrap.php`, creating `vb()`, and using native bridge methods do not boot Illuminate.
+| Method | Description |
+|---|---|
+| `vb()->userId()` | Current logged-in user ID as integer (`0` if guest). |
+| `vb()->isLoggedIn()` | Returns `true` if current visitor is authenticated. |
+| `vb()->user()` | Fetches complete current userinfo array. |
+| `vb()->can('perm', 'group')` | Checks native vBulletin user permissions. |
+| `vb()->setting('varname', $default)` | Reads an option directly from vBulletin datastore. |
+| `vb()->session()` | Gets the current native session instance. |
+| `vb()->phrase('name')` | Fetches a vBulletin phrase translation. |
+| `vb()->node($id)` | Fetches a native vBulletin node (forum/thread/post). |
+| `vb()->url('route', $data)` | Generates a native vBulletin SEO URL. |
+| `vb()->api('controller', 'method', $args)` | Calls any native vBulletin 6 API method. |
 
-## Laravel and vBulletin responsibilities
+---
 
-| Laravel / Illuminate | vBulletin |
-| --- | --- |
-| Data models | Authentication and session |
-| Relationships | Usergroups and permissions |
-| Query building | Nodes, topics, and posts |
-| Application logic | Templates and phrases |
-| Container and transactions | Routes and Site Builder |
-| Eloquent | AdminCP and native lifecycle |
+## 🤝 Responsibility Matrix
 
-## XenForo developers
+| Feature | Handled By |
+|---|---|
+| **Data Models & Relationships** | Laravel Eloquent |
+| **Collections & Transforming** | Laravel Collections (`collect()`) |
+| **Dependency Injection** | Laravel Container (`app()`) |
+| **User Authentication & Session** | vBulletin Core (`vb()->user()`) |
+| **Permissions & Usergroups** | vBulletin Core (`vb()->can()`) |
+| **Site Builder & Presentation** | vBulletin Templates & Widgets |
+| **Forum Navigation & AdminCP** | vBulletin XML & AdminCP Scripts |
 
-This is a migration mental map, not a XenForo clone:
+---
 
-| XenForo | VB Laravel |
-| --- | --- |
-| Entity | Eloquent Model |
-| Finder | Eloquent Query / Scope |
-| Repository | Service when necessary |
-| Service | Service |
-| Job | Laravel Job where supported |
-| Permission | `vb()->can()` |
-| Phrase | `vb()->phrase()` |
-| URL | `vb()->url()` |
-| Node/content | `vb()->node()` |
+## 🧪 Testing
 
-VB Laravel does not clone XenForo.
+Run the included verification tests with PHP:
 
-## Compatibility philosophy
+```bash
+php tests/poc.php
+php tests/package-layout.php
+```
 
-Add-ons depend on a VB Laravel Runtime version, not directly on an internal Illuminate version. The Runtime controls shared Illuminate dependencies. vBulletin API and version differences should be absorbed by the Bridge where practical. Public APIs should follow `add → deprecate → remove` across major versions. The 0.x line is experimental.
+---
 
-## Dependency isolation
+## 📄 License
 
-Private Composer vendor files reduce coupling and keep the Runtime separate from vBulletin's Composer vendor directory, but they do not guarantee complete PHP namespace isolation because both autoloaders run in one PHP process. No known conflict exists in the tested environment. Namespace prefixing or build isolation may be introduced later only if genuinely necessary.
-
-## What is not included
-
-- No Laravel Auth replacement.
-- No Blade replacement.
-- No Laravel Router replacement.
-- No full Laravel HTTP Kernel.
-- No marketplace.
-- No add-on generator or DevKit yet.
-- No promise that every Laravel package will work.
-
-## Development principles
-
-- Do not modify the vBulletin core.
-- Keep the Runtime small.
-- Reuse Laravel instead of recreating Laravel.
-- Reuse vBulletin instead of recreating vBulletin.
-- Keep `vb()` small and stable.
-- Avoid unnecessary abstractions.
-
-## Roadmap
-
-Possible future work includes broader Bridge coverage, dependency isolation improvements if required, additional Illuminate capabilities, developer tooling, and compatibility testing across more vBulletin versions. No dates or feature guarantees are promised.
-
-## Contributing, security, and license
-
-See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [LICENSE](LICENSE).
-
-## Further documentation
-
-See [COMPATIBILITY.md](COMPATIBILITY.md), [CHANGELOG.md](CHANGELOG.md), and [docs/dependency-collision-audit.md](docs/dependency-collision-audit.md).
+This project is licensed under the [MIT License](LICENSE).

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 - 2026-09-05
+
+- **Centralized Eloquent Database Booting**: `Runtime::bootDatabase()` now automatically configures and boots Eloquent via `vB::getConfig()` with `utf8mb4` encoding, eliminating duplicate database connections across add-ons.
+- **Dynamic PSR-4 Autoloading**: `AddonLoader` automatically registers a PSR-4 autoloader for every loaded add-on, eliminating the need for manual `require_once` statements.
+- **Global Developer Helpers**: Added `collect()`, `app()`, and `db()` global helpers.
+- **Enhanced Bridge API**: Added `vb()->userId()`, `vb()->isLoggedIn()`, `vb()->setting()`, and `vb()->session()` methods to the `Bridge`.
+- **Improved Backward Compatibility**: Supported semver range matching for `^0.1` and `^0.2` add-ons.
+
 ## 0.1.0 - 2026-08-11
 
 - First experimental release of VB Laravel for vBulletin 6.

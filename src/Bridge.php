@@ -11,6 +11,36 @@ final class Bridge
         return $this->call('user', 'fetchCurrentUserinfo');
     }
 
+    public function userId(): int
+    {
+        $user = (array) $this->user();
+        return (int) ($user['userid'] ?? 0);
+    }
+
+    public function isLoggedIn(): bool
+    {
+        return $this->userId() > 0;
+    }
+
+    public function setting(string $name, mixed $default = null): mixed
+    {
+        if (class_exists('vB', false) && method_exists('vB', 'getDatastore')) {
+            $val = \vB::getDatastore()->getOption($name);
+            return $val !== null ? $val : $default;
+        }
+
+        return $default;
+    }
+
+    public function session(): mixed
+    {
+        if (class_exists('vB', false) && method_exists('vB', 'getCurrentSession')) {
+            return \vB::getCurrentSession();
+        }
+
+        return null;
+    }
+
     public function request(): mixed
     {
         return $this->call('request', 'getRequestInfo');

@@ -2,12 +2,12 @@
 <product productid="vblaravel" active="1">
     <title>VB Laravel Runtime</title>
     <description>Lightweight Illuminate runtime and native vBulletin bridge.</description>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <url></url>
     <versioncheckurl></versioncheckurl>
     <dependencies></dependencies>
     <codes>
-        <code version="0.1.0">
+        <code version="0.2.0">
             <installcode><![CDATA[]]></installcode>
             <uninstallcode><![CDATA[]]></uninstallcode>
         </code>

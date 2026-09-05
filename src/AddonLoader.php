@@ -31,6 +31,8 @@ final class AddonLoader
         }
 
         $provider = $manifest['provider'];
+        self::registerAutoloader($path, $manifest, $provider);
+
         $providerFile = $path . '/src/' . basename(str_replace('\\', '/', $provider)) . '.php';
         if (!is_file($providerFile)) { throw new InvalidArgumentException("Add-on provider file not found: {$providerFile}"); }
         Runtime::boot();
@@ -43,10 +45,40 @@ final class AddonLoader
         self::$loaded[$path] = true;
     }
 
+    private static function registerAutoloader(string $path, array $manifest, string $provider): void
+    {
+        $psr4 = (array) ($manifest['autoload']['psr-4'] ?? []);
+
+        if (empty($psr4)) {
+            $lastSlash = strrpos($provider, '\\');
+            if ($lastSlash !== false) {
+                $ns = substr($provider, 0, $lastSlash + 1);
+                $psr4[$ns] = 'src/';
+            }
+        }
+
+        foreach ($psr4 as $prefix => $relativeDir) {
+            $baseDir = rtrim($path, '/\\') . '/' . trim($relativeDir, '/\\') . '/';
+            spl_autoload_register(static function (string $class) use ($prefix, $baseDir): void {
+                $len = strlen($prefix);
+                if (strncmp($prefix, $class, $len) !== 0) {
+                    return;
+                }
+                $relativeClass = substr($class, $len);
+                $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
+                if (is_file($file)) {
+                    require_once $file;
+                }
+            });
+        }
+    }
+
     private static function runtimeMatches(string $constraint): bool
     {
         if (!preg_match('/^\^(\d+)\.(\d+)$/', trim($constraint), $matches)) { return false; }
         [$major, $minor] = array_map('intval', explode('.', Runtime::VERSION, 2));
-        return $major === (int) $matches[1] && $minor === (int) $matches[2];
+        $reqMajor = (int) $matches[1];
+        $reqMinor = (int) $matches[2];
+        return $major === $reqMajor && $minor >= $reqMinor;
     }
 }
