@@ -147,14 +147,7 @@ final class Runtime
         $master = [];
         $prefix = defined('TABLE_PREFIX') ? (string) TABLE_PREFIX : '';
 
-        if (class_exists('vB', false) && method_exists('vB', 'getConfig')) {
-            $vbConfig = (array) \vB::getConfig();
-            $master = (array) ($vbConfig['MasterServer'] ?? []);
-            $database = (array) ($vbConfig['Database'] ?? []);
-            if (empty($prefix) && isset($database['tableprefix'])) {
-                $prefix = (string) $database['tableprefix'];
-            }
-        } elseif (class_exists('vB', false) && method_exists('vB', 'getDbAssertor')) {
+        if (class_exists('vB', false) && method_exists('vB', 'getDbAssertor')) {
             try {
                 $assertor = \vB::getDbAssertor();
                 $ref = new \ReflectionProperty($assertor, 'dbconfig');
@@ -162,7 +155,36 @@ final class Runtime
                 $cfg = (array) $ref->getValue($assertor);
                 $master = (array) ($cfg['MasterServer'] ?? []);
                 $database = (array) ($cfg['Database'] ?? []);
+                if (empty($prefix) && isset($database['tableprefix'])) {
+                    $prefix = (string) $database['tableprefix'];
+                }
             } catch (Throwable) {
+            }
+        }
+
+        if (empty($master['username']) && defined('DIR') && is_file(DIR . '/includes/config.php')) {
+            try {
+                $config = [];
+                require DIR . '/includes/config.php';
+                if (!empty($config['MasterServer'])) {
+                    $master = (array) $config['MasterServer'];
+                }
+                if (!empty($config['Database'])) {
+                    $database = (array) $config['Database'];
+                    if (empty($prefix) && isset($database['tableprefix'])) {
+                        $prefix = (string) $database['tableprefix'];
+                    }
+                }
+            } catch (Throwable) {
+            }
+        }
+
+        if (empty($master['username']) && class_exists('vB', false) && method_exists('vB', 'getConfig')) {
+            $vbConfig = (array) \vB::getConfig();
+            $master = array_merge((array) ($vbConfig['MasterServer'] ?? []), $master);
+            $database = array_merge((array) ($vbConfig['Database'] ?? []), $database);
+            if (empty($prefix) && isset($database['tableprefix'])) {
+                $prefix = (string) $database['tableprefix'];
             }
         }
 

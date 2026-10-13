@@ -7,3 +7,6 @@
 Thumbs.db
 /release/
 /.release-staging/
+.env.testing
+.env
+*.env

@@ -15,7 +15,7 @@ final class Bridge
         }
 
         $info = $this->call('user', 'fetchCurrentUserinfo');
-        if (!is_array($info) || isset($info['errors'])) {
+        if (!is_array($info) || !empty($info['errors'])) {
             return $this->currentUser = [];
         }
 
@@ -136,6 +136,10 @@ final class Bridge
     {
         if (class_exists('Api_InterfaceAbstract', false) && method_exists('Api_InterfaceAbstract', 'instance')) {
             return \Api_InterfaceAbstract::instance()->callApi($controller, $method, $arguments);
+        }
+
+        if (class_exists('vB_Api')) {
+            return \vB_Api::instance($controller)->$method(...$arguments);
         }
 
         return null;

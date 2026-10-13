@@ -2,14 +2,14 @@
 <product productid="wsforms" active="1">
     <title>Custom Form Builder</title>
     <description>Heavyweight relational form builder demonstration for vBulletin 6 using vb-laravel</description>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <url></url>
     <versioncheckurl></versioncheckurl>
     <dependencies>
-        <dependency dependencytype="product" parentproductid="vblaravel" minversion="0.2.0" />
+        <dependency dependencytype="product" parentproductid="vblaravel" minversion="0.2.0" maxversion="" />
     </dependencies>
     <codes>
-        <code version="1.0.0">
+        <code version="*">
             <installcode><![CDATA[$vblBootstrap = DIR . '/packages/vblaravel/bootstrap.php';
 if (is_file($vblBootstrap)) {
     require_once $vblBootstrap;
@@ -29,7 +29,7 @@ if (class_exists('\VbLaravel\Migrator')) {
         </code>
     </codes>
     <templates>
-        <template name="wsforms_form_view" templatetype="template"><![CDATA[<div class="ws-form-wrapper" id="ws-form-{vb:raw form.id}">
+        <template name="wsforms_form_view" templatetype="template" date="1786800000" username="VB Laravel" version="1.0.1"><![CDATA[<div class="ws-form-wrapper" id="ws-form-{vb:raw form.id}">
     <h2>{vb:raw form.title}</h2>
     <p>{vb:raw form.description}</p>
     <form method="post" action="{vb:raw form.action_url}">
@@ -40,7 +40,7 @@ if (class_exists('\VbLaravel\Migrator')) {
     </form>
 </div>
 ]]></template>
-        <template name="wsforms_hook_header_head" templatetype="template"><![CDATA[<style>
+        <template name="wsforms_hook_header_head" templatetype="template" date="1786800000" username="VB Laravel" version="1.0.1"><![CDATA[<style>
 .ws-form-wrapper {
     background: #fff;
     padding: 16px;
@@ -53,14 +53,21 @@ if (class_exists('\VbLaravel\Migrator')) {
     <plugins></plugins>
     <phrases>
         <phrasetype name="vbulletin_settings" fieldname="vbsettings">
-            <phrase name="setting_wsforms_enabled_title"><![CDATA[Enable Custom Forms]]></phrase>
-            <phrase name="setting_wsforms_enabled_desc"><![CDATA[Globally enable or disable custom form submissions.]]></phrase>
-            <phrase name="setting_wsforms_max_submissions_title"><![CDATA[Max Submissions Per User]]></phrase>
-            <phrase name="setting_wsforms_max_submissions_desc"><![CDATA[Maximum allowed form entries per user account.]]></phrase>
+            <phrase name="setting_wsforms_enabled_title" date="1786800000" username="VB Laravel" version="1.0.1"><![CDATA[Enable Custom Forms]]></phrase>
+            <phrase name="setting_wsforms_enabled_desc" date="1786800000" username="VB Laravel" version="1.0.1"><![CDATA[Globally enable or disable custom form submissions.]]></phrase>
+            <phrase name="setting_wsforms_max_submissions_title" date="1786800000" username="VB Laravel" version="1.0.1"><![CDATA[Max Submissions Per User]]></phrase>
+            <phrase name="setting_wsforms_max_submissions_desc" date="1786800000" username="VB Laravel" version="1.0.1"><![CDATA[Maximum allowed form entries per user account.]]></phrase>
         </phrasetype>
     </phrases>
     <hooks>
-        <hook active="1" hookname="header_head" template="wsforms_hook_header_head" arguments="" />
+        <hook>
+            <hookname>header_head</hookname>
+            <title>Custom Form Builder</title>
+            <active>1</active>
+            <hookorder>10</hookorder>
+            <template>wsforms_hook_header_head</template>
+            <arguments />
+        </hook>
     </hooks>
     <settinggroups>
         <settinggroup name="wsforms" displayorder="100">

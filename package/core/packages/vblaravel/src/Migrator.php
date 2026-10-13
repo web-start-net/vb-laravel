@@ -16,6 +16,7 @@ final class Migrator
 
     public static function up(string $addonPath): int
     {
+        Runtime::bootDatabase();
         $addonPath = realpath($addonPath) ?: rtrim($addonPath, '/\\');
         $addonId = self::resolveAddonId($addonPath);
         $migrationsDir = $addonPath . '/database/migrations';
@@ -71,6 +72,7 @@ final class Migrator
 
     public static function down(string $addonPath): int
     {
+        Runtime::bootDatabase();
         $addonPath = realpath($addonPath) ?: rtrim($addonPath, '/\\');
         $addonId = self::resolveAddonId($addonPath);
         $migrationsDir = $addonPath . '/database/migrations';
@@ -137,7 +139,7 @@ final class Migrator
 
     private static function resolveInstance(string $file): ?Migration
     {
-        $res = require_once $file;
+        $res = require $file;
         if ($res instanceof Migration) {
             return $res;
         }

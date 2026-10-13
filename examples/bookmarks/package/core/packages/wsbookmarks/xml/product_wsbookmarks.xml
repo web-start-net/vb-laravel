@@ -6,10 +6,10 @@
     <url></url>
     <versioncheckurl></versioncheckurl>
     <dependencies>
-        <dependency dependencytype="product" parentproductid="vblaravel" minversion="0.2.0" />
+        <dependency dependencytype="product" parentproductid="vblaravel" minversion="0.2.0" maxversion="" />
     </dependencies>
     <codes>
-        <code version="1.0.0">
+        <code version="*">
             <installcode><![CDATA[$vblBootstrap = DIR . '/packages/vblaravel/bootstrap.php';
 if (is_file($vblBootstrap)) {
     require_once $vblBootstrap;
@@ -29,11 +29,11 @@ if (class_exists('\VbLaravel\Migrator')) {
         </code>
     </codes>
     <templates>
-        <template name="wsbookmarks_bookmark_button" templatetype="template"><![CDATA[<div class="ws-bookmark-container" data-nodeid="{vb:raw node.nodeid}">
+        <template name="wsbookmarks_bookmark_button" templatetype="template" date="1786800000" username="VB Laravel" version="1.0.0"><![CDATA[<div class="ws-bookmark-container" data-nodeid="{vb:raw node.nodeid}">
     <button type="button" class="btn btn-secondary ws-bookmark-btn">Bookmark</button>
 </div>
 ]]></template>
-        <template name="wsbookmarks_hook_header_head" templatetype="template"><![CDATA[<style>
+        <template name="wsbookmarks_hook_header_head" templatetype="template" date="1786800000" username="VB Laravel" version="1.0.0"><![CDATA[<style>
 .ws-bookmark-container {
     display: inline-block;
     margin: 4px 0;
@@ -47,12 +47,19 @@ if (class_exists('\VbLaravel\Migrator')) {
     <plugins></plugins>
     <phrases>
         <phrasetype name="vbulletin_settings" fieldname="vbsettings">
-            <phrase name="setting_wsbookmarks_enabled_title"><![CDATA[Enable Bookmarks]]></phrase>
-            <phrase name="setting_wsbookmarks_enabled_desc"><![CDATA[Allow registered users to bookmark threads and posts.]]></phrase>
+            <phrase name="setting_wsbookmarks_enabled_title" date="1786800000" username="VB Laravel" version="1.0.0"><![CDATA[Enable Bookmarks]]></phrase>
+            <phrase name="setting_wsbookmarks_enabled_desc" date="1786800000" username="VB Laravel" version="1.0.0"><![CDATA[Allow registered users to bookmark threads and posts.]]></phrase>
         </phrasetype>
     </phrases>
     <hooks>
-        <hook active="1" hookname="header_head" template="wsbookmarks_hook_header_head" arguments="" />
+        <hook>
+            <hookname>header_head</hookname>
+            <title>Bookmarks</title>
+            <active>1</active>
+            <hookorder>10</hookorder>
+            <template>wsbookmarks_hook_header_head</template>
+            <arguments />
+        </hook>
     </hooks>
     <settinggroups>
         <settinggroup name="wsbookmarks" displayorder="100">

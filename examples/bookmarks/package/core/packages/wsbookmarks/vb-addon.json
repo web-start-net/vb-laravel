@@ -1,0 +1,14 @@
+{
+  "id": "wsbookmarks",
+  "name": "Bookmarks",
+  "title": "Bookmarks",
+  "version": "1.0.0",
+  "runtime": "^0.2",
+  "provider": "WsBookmarks\\BookmarksServiceProvider",
+  "description": "Lightweight bookmarks addon powered by vb-laravel",
+  "autoload": {
+    "psr-4": {
+      "WsBookmarks\\": "src/"
+    }
+  }
+}
