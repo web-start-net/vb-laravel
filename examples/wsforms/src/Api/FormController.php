@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace WsForms\Api;
 
-use RuntimeException;
 use VbLaravel\Attributes\Api;
 use VbLaravel\Attributes\Can;
 use WsForms\Models\Form;
@@ -29,19 +28,14 @@ class FormController
         ];
     }
 
-    #[Api('wsforms:form', 'submit')]
+    #[Api(
+        controller: 'wsforms:form',
+        action: 'submit',
+        write: true
+    )]
     #[Can('canview', 'genericpermissions')]
     public function submit(int $formId, array $values, ?string $securitytoken = null): array
     {
-        // CSRF Verification for write endpoint
-        if (!class_exists('vB', false) || empty($securitytoken)) {
-            // Check session securitytoken if in vB environment
-            $user = vb()->user();
-            if (!empty($user['securitytoken']) && $securitytoken !== $user['securitytoken']) {
-                throw new RuntimeException('CSRF security token mismatch.');
-            }
-        }
-
         $form = Form::where('enabled', true)->findOrFail($formId);
 
         $submission = FormSubmission::create([

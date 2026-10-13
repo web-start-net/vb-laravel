@@ -11,7 +11,8 @@ final class Api
 {
     public function __construct(
         public string $controller,
-        public ?string $method = null
+        public ?string $action = null,
+        public bool $write = false
     ) {
     }
 }

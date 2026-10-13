@@ -10,3 +10,5 @@ Thumbs.db
 .env.testing
 .env
 *.env
+examples/*/package/
+examples/*/src/_Generated/

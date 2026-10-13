@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace VbLaravel\Dev;
 
+use PhpParser\Node;
+use PhpParser\Node\Stmt;
+use PhpParser\ParserFactory;
+
 final class Validator
 {
     private const KNOWN_VB6_PHP_HOOKS = [
@@ -11,6 +15,7 @@ final class Validator
         'hookFrontendContentAfterAdd',
         'hookFrontendContentBeforeUpdate',
         'hookFrontendContentAfterUpdate',
+        'hookFrontendPreheader',
         'hookUserAfterSave',
         'hookRegistrationBeforeSave',
         'hookUserModerationApproved',
@@ -25,6 +30,13 @@ final class Validator
 
     public static function validate(string $addonPath): array
     {
+        if (!class_exists(ParserFactory::class)) {
+            $devAutoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
+            if (is_file($devAutoload)) {
+                require_once $devAutoload;
+            }
+        }
+
         $addonPath = realpath($addonPath) ?: rtrim($addonPath, '/\\');
         $errors = [];
 
@@ -57,7 +69,7 @@ final class Validator
             $errors[] = "Manifest 'version' must follow semver (e.g. 1.0.0).";
         }
 
-        // Validate Runtime: ^\^(\d+)\.(\d+)(?:\.(\d+))?$
+        // Validate Runtime: ^\^(\d+)\.(\d+)(?:\.(\d+))?$; allow ^0.2, ^0.10, ^1.0
         if (empty($manifest['runtime']) || !preg_match('/^\^(\d+)\.(\d+)(?:\.(\d+))?$/', (string) $manifest['runtime'])) {
             $errors[] = "Manifest 'runtime' must be a caret semver constraint (e.g. ^0.2, ^0.10, ^1.0).";
         }
@@ -67,48 +79,83 @@ final class Validator
             $errors[] = "Manifest requires a 'provider' class name.";
         }
 
-        // Scan PHP files in src/
+        // Scan PHP files in src/ using AST
         $srcDir = $addonPath . '/src';
-        if (is_dir($srcDir)) {
+        if (is_dir($srcDir) && class_exists(ParserFactory::class)) {
+            $parser = (new ParserFactory())->createForHostVersion();
             $phpFiles = self::rglob($srcDir, '*.php');
+
             foreach ($phpFiles as $file) {
-                $code = (string) file_get_contents($file);
+                if (str_contains(str_replace('\\', '/', $file), '/_Generated/')) {
+                    continue;
+                }
 
-                // AST / Token inspection
-                $tokens = token_get_all($code);
-                $hasCan = false;
-                $hasApi = false;
-                $hasHook = false;
+                try {
+                    $stmts = $parser->parse((string) file_get_contents($file)) ?? [];
+                } catch (\Throwable $e) {
+                    $errors[] = "Parse error in {$file}: " . $e->getMessage();
+                    continue;
+                }
 
-                // Inspect attributes syntax #[...]
-                if (preg_match_all('/#\[([^\]]+)\]/', $code, $attrMatches)) {
-                    foreach ($attrMatches[1] as $attrStr) {
-                        if (str_contains($attrStr, 'Can(') || $attrStr === 'Can') {
-                            $hasCan = true;
-                        }
-                        if (str_contains($attrStr, 'Api(') || $attrStr === 'Api') {
-                            $hasApi = true;
-                        }
-                        if (preg_match('/Hook\s*\(\s*[\'"]([^\'"]+)[\'"]/', $attrStr, $hookMatches)) {
-                            $hasHook = true;
-                            $hookName = $hookMatches[1];
+                $imports = [];
+                $classes = [];
 
-                            // Flag old vB3/vB4 hooks
-                            if (in_array($hookName, ['init_startup', 'thread_post_complete', 'global_bootstrap'], true)) {
-                                $errors[] = "Deprecated/invalid hook '{$hookName}' in {$file}. Use real vB6 hook names.";
-                            }
-
-                            // Warn if template hook in #[Hook]
-                            if (in_array($hookName, ['header_head', 'header_topusermenu_external_login'], true)) {
-                                $errors[] = "Template hook '{$hookName}' found in #[Hook] attribute in {$file}. Template hooks must be placed under templates/hooks/<hookname>.html, not #[Hook].";
+                foreach ($stmts as $stmt) {
+                    if ($stmt instanceof Stmt\Namespace_) {
+                        foreach ($stmt->stmts as $inner) {
+                            if ($inner instanceof Stmt\Use_) {
+                                foreach ($inner->uses as $u) {
+                                    $alias = $u->alias ? $u->alias->name : $u->name->getLast();
+                                    $imports[$alias] = $u->name->toString();
+                                }
+                            } elseif ($inner instanceof Stmt\Class_) {
+                                $classes[] = $inner;
                             }
                         }
+                    } elseif ($stmt instanceof Stmt\Use_) {
+                        foreach ($stmt->uses as $u) {
+                            $alias = $u->alias ? $u->alias->name : $u->name->getLast();
+                            $imports[$alias] = $u->name->toString();
+                        }
+                    } elseif ($stmt instanceof Stmt\Class_) {
+                        $classes[] = $stmt;
                     }
                 }
 
-                // #[Can] is only allowed on #[Api]
-                if ($hasCan && !$hasApi) {
-                    $errors[] = "#[Can] attribute found in {$file} without #[Api]. #[Can] is only allowed on #[Api] endpoints.";
+                foreach ($classes as $cls) {
+                    foreach ($cls->getMethods() as $method) {
+                        $hasApi = false;
+                        $hasCan = false;
+
+                        foreach ($method->attrGroups as $ag) {
+                            foreach ($ag->attrs as $attr) {
+                                $name = $attr->name->toString();
+                                $resolved = $imports[$name] ?? $name;
+                                if (str_ends_with($resolved, '\\Hook') || $resolved === 'Hook') {
+                                    $hookArg = $attr->args[0] ?? null;
+                                    if ($hookArg && $hookArg->value instanceof Node\Scalar\String_) {
+                                        $hName = $hookArg->value->value;
+                                        if (in_array($hName, ['init_startup', 'thread_post_complete', 'global_bootstrap'], true)) {
+                                            $errors[] = "Deprecated/invalid hook '{$hName}' in {$file}. Use real vB6 hook names.";
+                                        }
+                                        if (in_array($hName, ['header_head', 'header_topusermenu_external_login'], true)) {
+                                            $errors[] = "Template hook '{$hName}' found in #[Hook] attribute in {$file}. Place under templates/hooks/<hookname>.html instead.";
+                                        }
+                                    }
+                                } elseif (str_ends_with($resolved, '\\Api') || $resolved === 'Api') {
+                                    $hasApi = true;
+                                } elseif (str_ends_with($resolved, '\\Can') || $resolved === 'Can') {
+                                    $hasCan = true;
+                                } elseif (!in_array($resolved, ['Override', 'ReturnTypeWillChange', 'SensitiveParameter', 'Deprecated'], true)) {
+                                    $errors[] = "Unknown attribute '#[{$name}]' on {$cls->name?->name}::{$method->name->name}() in {$file}.";
+                                }
+                            }
+                        }
+
+                        if ($hasCan && !$hasApi) {
+                            $errors[] = "#[Can] attribute found on {$cls->name?->name}::{$method->name->name}() in {$file} without #[Api]. #[Can] is only permitted on #[Api] endpoints.";
+                        }
+                    }
                 }
             }
         }

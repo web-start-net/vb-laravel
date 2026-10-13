@@ -11,17 +11,27 @@ require_once __DIR__ . '/src/Attributes/Api.php';
 require_once __DIR__ . '/src/Attributes/Can.php';
 
 spl_autoload_register(static function (string $class): void {
-    if (str_starts_with($class, 'VbLaravel\\Models\\')) {
-        VbLaravel\Runtime::boot();
-        $file = __DIR__ . '/src/Models/' . substr($class, strlen('VbLaravel\\Models\\')) . '.php';
-        if (is_file($file)) {
-            require_once $file;
+    if (
+        str_starts_with($class, 'Illuminate\\')
+        || str_starts_with($class, 'Carbon\\')
+        || str_starts_with($class, 'VbLaravel\\Models\\')
+        || str_contains($class, '\\Models\\')
+        || str_ends_with($class, 'Model')
+        || $class === 'VbLaravel\\Migrator'
+    ) {
+        if (!\VbLaravel\Runtime::isBooted()) {
+            \VbLaravel\Runtime::boot(__DIR__);
         }
-    } elseif ($class === 'VbLaravel\\Migrator') {
-        VbLaravel\Runtime::boot();
-        $file = __DIR__ . '/src/Migrator.php';
-        if (is_file($file)) {
-            require_once $file;
+        if (str_starts_with($class, 'VbLaravel\\Models\\')) {
+            $file = __DIR__ . '/src/Models/' . substr($class, strlen('VbLaravel\\Models\\')) . '.php';
+            if (is_file($file)) {
+                require_once $file;
+            }
+        } elseif ($class === 'VbLaravel\\Migrator') {
+            $file = __DIR__ . '/src/Migrator.php';
+            if (is_file($file)) {
+                require_once $file;
+            }
         }
     }
 });

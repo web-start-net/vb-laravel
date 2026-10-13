@@ -16,10 +16,15 @@ abstract class ReadOnlyModel extends Model
 
     public $timestamps = false;
 
+    public function newEloquentBuilder($query): ReadOnlyBuilder
+    {
+        return new ReadOnlyBuilder($query);
+    }
+
     public function save(array $options = []): bool
     {
         throw new BadMethodCallException(
-            static::class . ' is a read-only core vBulletin model. Writes to core tables must be executed via native vBulletin APIs (e.g. vb()->api()) to preserve node closure tables, caches, permissions, and search indexing.'
+            static::class . ' is a read-only core vBulletin model. Writes to core tables must be executed via native vBulletin APIs.'
         );
     }
 
@@ -30,10 +35,31 @@ abstract class ReadOnlyModel extends Model
         );
     }
 
+    public function forceDelete(): ?bool
+    {
+        throw new BadMethodCallException(
+            static::class . ' is a read-only core vBulletin model. Deletes must go through native vBulletin APIs.'
+        );
+    }
+
     public static function create(array $attributes = [])
     {
         throw new BadMethodCallException(
             static::class . ' is a read-only core vBulletin model. Inserts must go through native vBulletin APIs.'
+        );
+    }
+
+    public static function insert(array $values): bool
+    {
+        throw new BadMethodCallException(
+            static::class . ' is a read-only core vBulletin model. Inserts must go through native vBulletin APIs.'
+        );
+    }
+
+    public static function truncate(): void
+    {
+        throw new BadMethodCallException(
+            static::class . ' is a read-only core vBulletin model. Writes must go through native vBulletin APIs.'
         );
     }
 }

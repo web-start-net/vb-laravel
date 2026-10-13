@@ -7,6 +7,10 @@ if (PHP_SAPI !== 'cli') {
     exit('This script must be run from the command line.' . PHP_EOL);
 }
 
+if (is_file(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
+
 require_once __DIR__ . '/../src/Dev/Validator.php';
 require_once __DIR__ . '/../src/Dev/Compiler.php';
 

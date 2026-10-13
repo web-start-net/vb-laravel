@@ -22,6 +22,11 @@ final class Runtime
     private static ?Manager $database = null;
     private static ?Throwable $failure = null;
 
+    /** @var array<string> */
+    private static array $providers = [];
+    /** @var array<string, object> */
+    private static array $bootedProviders = [];
+
     public static function state(): string
     {
         return self::$state;
@@ -30,6 +35,53 @@ final class Runtime
     public static function isBooted(): bool
     {
         return self::$state === self::BOOTED;
+    }
+
+    public static function registerProvider(string $providerClass): void
+    {
+        if (!in_array($providerClass, self::$providers, true)) {
+            self::$providers[] = $providerClass;
+        }
+
+        if (self::$state === self::BOOTED) {
+            self::bootProvider($providerClass);
+        }
+    }
+
+    private static function bootProvider(string $providerClass): void
+    {
+        if (isset(self::$bootedProviders[$providerClass])) {
+            return;
+        }
+
+        if (!class_exists($providerClass)) {
+            return;
+        }
+
+        $provider = new $providerClass(self::$container);
+        if (method_exists($provider, 'register')) {
+            $provider->register();
+        }
+        if (method_exists($provider, 'boot')) {
+            $provider->boot();
+        }
+
+        self::$bootedProviders[$providerClass] = $provider;
+    }
+
+    public static function getBootedProviders(): array
+    {
+        return self::$bootedProviders;
+    }
+
+    public static function reset(): void
+    {
+        self::$state = self::UNLOADED;
+        self::$container = null;
+        self::$database = null;
+        self::$failure = null;
+        self::$providers = [];
+        self::$bootedProviders = [];
     }
 
     public static function boot(?string $vendorPath = null): Container
@@ -58,6 +110,10 @@ final class Runtime
                 $autoload = rtrim($basePath, '/\\') . '/vendor/autoload.php';
             } elseif (is_file(rtrim($basePath, '/\\') . '/autoload.php')) {
                 $autoload = rtrim($basePath, '/\\') . '/autoload.php';
+            } elseif (is_file(dirname(__DIR__) . '/vendor/autoload.php')) {
+                $autoload = dirname(__DIR__) . '/vendor/autoload.php';
+            } elseif (is_file(dirname(__DIR__, 2) . '/vendor/autoload.php')) {
+                $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
             } else {
                 $autoload = dirname(__DIR__) . '/vendor/autoload.php';
             }
@@ -72,6 +128,10 @@ final class Runtime
 
             if (class_exists('vB', false)) {
                 self::bootDatabase();
+            }
+
+            foreach (self::$providers as $providerClass) {
+                self::bootProvider($providerClass);
             }
 
             return self::$container;

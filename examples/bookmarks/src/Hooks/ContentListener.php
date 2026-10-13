@@ -8,6 +8,13 @@ use VbLaravel\Attributes\Hook;
 
 class ContentListener
 {
+    #[Hook('hookFrontendPreheader', 10)]
+    public function onPreheader(array &$params): void
+    {
+        $enabled = vb()->setting('wsbookmarks_enabled');
+        // This handler only queries vB settings and does not boot Illuminate
+    }
+
     #[Hook('hookFrontendContentAfterAdd', 10)]
     public function onContentAdded(array &$params): void
     {
