@@ -6,3 +6,22 @@ require_once __DIR__ . '/src/helpers.php';
 require_once __DIR__ . '/src/Bridge.php';
 require_once __DIR__ . '/src/Runtime.php';
 require_once __DIR__ . '/src/AddonLoader.php';
+require_once __DIR__ . '/src/Attributes/Hook.php';
+require_once __DIR__ . '/src/Attributes/Api.php';
+require_once __DIR__ . '/src/Attributes/Can.php';
+
+spl_autoload_register(static function (string $class): void {
+    if (str_starts_with($class, 'VbLaravel\\Models\\')) {
+        VbLaravel\Runtime::boot();
+        $file = __DIR__ . '/src/Models/' . substr($class, strlen('VbLaravel\\Models\\')) . '.php';
+        if (is_file($file)) {
+            require_once $file;
+        }
+    } elseif ($class === 'VbLaravel\\Migrator') {
+        VbLaravel\Runtime::boot();
+        $file = __DIR__ . '/src/Migrator.php';
+        if (is_file($file)) {
+            require_once $file;
+        }
+    }
+});

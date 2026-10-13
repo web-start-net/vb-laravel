@@ -18,6 +18,12 @@
             "src/helpers.php"
         ]
     },
+    "require-dev": {
+        "nikic/php-parser": "^5.0"
+    },
+    "bin": [
+        "bin/vbl"
+    ],
     "config": {
         "sort-packages": true
     }

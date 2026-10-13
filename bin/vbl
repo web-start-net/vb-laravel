@@ -1,0 +1,55 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+if (PHP_SAPI !== 'cli') {
+    exit('This script must be run from the command line.' . PHP_EOL);
+}
+
+require_once __DIR__ . '/../src/Dev/Validator.php';
+require_once __DIR__ . '/../src/Dev/Compiler.php';
+
+use VbLaravel\Dev\Compiler;
+use VbLaravel\Dev\Validator;
+
+$argv = $_SERVER['argv'];
+$command = $argv[1] ?? 'help';
+$target = $argv[2] ?? '.';
+
+switch ($command) {
+    case 'validate':
+        echo "Validating add-on at: {$target}...\n";
+        $errors = Validator::validate($target);
+        if (empty($errors)) {
+            echo "✓ Validation passed successfully!\n";
+            exit(0);
+        } else {
+            echo "✗ Validation failed:\n";
+            foreach ($errors as $err) {
+                echo "  - {$err}\n";
+            }
+            exit(1);
+        }
+
+    case 'build':
+        $out = $argv[3] ?? null;
+        echo "Building add-on at: {$target}...\n";
+        try {
+            $xml = Compiler::build($target, $out);
+            echo "✓ Build complete! Generated product XML: {$xml}\n";
+            exit(0);
+        } catch (Throwable $e) {
+            echo "✗ Build failed: " . $e->getMessage() . "\n";
+            exit(1);
+        }
+
+    case 'help':
+    default:
+        echo "vBulletin Laravel (vbl) CLI Tool\n\n";
+        echo "Usage:\n";
+        echo "  vbl validate <path-to-addon>         Validate manifest, attributes, and migrations\n";
+        echo "  vbl build <path-to-addon> [out-dir]  Compile templates, phrases, settings, and hooks to product XML\n";
+        echo "  vbl help                             Display this help message\n";
+        exit(0);
+}

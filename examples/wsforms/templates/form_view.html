@@ -1,0 +1,10 @@
+<div class="ws-form-wrapper" id="ws-form-{vb:raw form.id}">
+    <h2>{vb:raw form.title}</h2>
+    <p>{vb:raw form.description}</p>
+    <form method="post" action="{vb:raw form.action_url}">
+        <input type="hidden" name="securitytoken" value="{vb:raw userinfo.securitytoken}" />
+        <input type="hidden" name="form_id" value="{vb:raw form.id}" />
+        {vb:raw form.fields_rendered}
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>

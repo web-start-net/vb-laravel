@@ -1,0 +1,14 @@
+{
+  "id": "wsforms",
+  "name": "Custom Form Builder",
+  "title": "Custom Form Builder",
+  "version": "1.0.0",
+  "runtime": "^0.2",
+  "provider": "WsForms\\FormsServiceProvider",
+  "description": "Heavyweight relational form builder demonstration for vBulletin 6 using vb-laravel",
+  "autoload": {
+    "psr-4": {
+      "WsForms\\": "src/"
+    }
+  }
+}

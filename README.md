@@ -36,12 +36,13 @@ if (!vb()->can('can_submit_forms')) {
 - 📦 **Dynamic PSR-4 Autoloading**: Add-on models, controllers, and services are automatically autoloaded. No manual `require_once` statements needed!
 - 🗄️ **Centralized Eloquent**: Database connection is established automatically with `utf8mb4` encoding using native vBulletin settings (`vB::getConfig()`).
 - 🛠️ **Developer Helpers**:
-  - `collect($items)` — Laravel Collection magic for arrays and datasets.
-  - `db('table')` — Fluent Query Builder shortcut.
-  - `app()` — Access the dependency injection container.
-  - `vb()->userId()` & `vb()->isLoggedIn()` — Quick authentication helpers.
-  - `vb()->setting('name')` — Instant access to vBulletin options.
-  - `vb()->session()` — Direct session access.
+  - `vb()` — Fast, zero-overhead global bridge to native vBulletin context.
+  - `\VbLaravel\collect($items)` — Laravel Collection magic for arrays and datasets.
+  - `\VbLaravel\db('table')` — Fluent Query Builder shortcut.
+  - `\VbLaravel\app()` — Access the dependency injection container.
+  - `\VbLaravel\Migrator` — Idempotent migrations powered by `Capsule::schema()`.
+  - `VbLaravel\Models` — Read-only core models (`User`, `Node`, `Channel`) with Unix dateline (`$dateFormat = 'U'`).
+  - `vbl` CLI (`vbl validate`, `vbl build`) — Static AST compilation of templates, phrases, settings, and hooks into certified product XML.
 
 ---
 

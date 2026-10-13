@@ -34,6 +34,10 @@ final class Runtime
 
     public static function boot(?string $vendorPath = null): Container
     {
+        if (PHP_VERSION_ID < 80200) {
+            throw new RuntimeException('VB Laravel Runtime requires PHP 8.2 or greater.');
+        }
+
         if (self::$state === self::BOOTED) {
             return self::$container;
         }
@@ -87,6 +91,16 @@ final class Runtime
         return self::$container;
     }
 
+    /**
+     * Boots Eloquent ORM via a dedicated lazy PDO connection.
+     *
+     * ARCHITECTURAL NOTE ON DATABASE CONNECTION & TRANSACTIONS:
+     * Native vBulletin 6 uses a \mysqli handle (vB_Db_Mysql_Connection::$connection_master).
+     * Eloquent strictly requires a PDO connection. Consequently, Eloquent runs on a separate PDO handle.
+     * Transactions executed via Capsule/Eloquent (e.g. Capsule::connection()->transaction())
+     * DO NOT encompass or protect native vBulletin queries executed via \vB::getDbAssertor().
+     * Conversely, native vBulletin transaction rollbacks will not roll back Eloquent database writes.
+     */
     public static function bootDatabase(?array $customConfig = null): Manager
     {
         if (self::$database !== null) {
@@ -120,6 +134,11 @@ final class Runtime
         self::$database = $capsule;
 
         return $capsule;
+    }
+
+    public static function schema()
+    {
+        return self::bootDatabase()->schema();
     }
 
     public static function extractVbDatabaseConfig(): array

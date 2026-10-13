@@ -6,20 +6,55 @@ namespace VbLaravel;
 
 final class Bridge
 {
-    public function user(): mixed
+    private ?array $currentUser = null;
+
+    public function user(): array
     {
-        return $this->call('user', 'fetchCurrentUserinfo');
+        if ($this->currentUser !== null) {
+            return $this->currentUser;
+        }
+
+        $info = $this->call('user', 'fetchCurrentUserinfo');
+        if (!is_array($info) || isset($info['errors'])) {
+            return $this->currentUser = [];
+        }
+
+        return $this->currentUser = $info;
     }
 
     public function userId(): int
     {
-        $user = (array) $this->user();
-        return (int) ($user['userid'] ?? 0);
+        return (int) ($this->user()['userid'] ?? 0);
     }
 
     public function isLoggedIn(): bool
     {
         return $this->userId() > 0;
+    }
+
+    public function inGroup(int|array $groupIds, ?int $userId = null): bool
+    {
+        $user = ($userId === null || $userId === $this->userId())
+            ? $this->user()
+            : (array) $this->call('user', 'fetchUserinfo', [$userId]);
+
+        if (empty($user) || !isset($user['usergroupid'])) {
+            return false;
+        }
+
+        $targetGroups = (array) $groupIds;
+        $userGroups = [(int) $user['usergroupid']];
+
+        if (!empty($user['membergroupids'])) {
+            $members = is_string($user['membergroupids'])
+                ? explode(',', $user['membergroupids'])
+                : (array) $user['membergroupids'];
+            foreach ($members as $gid) {
+                $userGroups[] = (int) $gid;
+            }
+        }
+
+        return !empty(array_intersect($targetGroups, $userGroups));
     }
 
     public function setting(string $name, mixed $default = null): mixed
@@ -58,25 +93,51 @@ final class Bridge
 
     public function can(string $permission, string $group = 'genericpermissions'): bool
     {
-        return (bool) \vB::getUserContext()->hasPermission($group, $permission);
+        if (!class_exists('vB', false) || !method_exists('vB', 'getUserContext')) {
+            return false;
+        }
+
+        try {
+            $context = \vB::getUserContext();
+            if (!$context || !method_exists($context, 'hasPermission')) {
+                return false;
+            }
+
+            return (bool) $context->hasPermission($group, $permission);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     public function url(string $route, array $data = [], array $extra = []): string
     {
-        return \vB5_Route::buildUrl($route, $data, $extra);
+        if (class_exists('vB5_Route', false) && method_exists('vB5_Route', 'buildUrl')) {
+            return \vB5_Route::buildUrl($route, $data, $extra);
+        }
+
+        return $route;
     }
 
     public function api(string $controller, ?string $method = null, array $arguments = []): mixed
     {
         if ($method === null) {
-            return \vB_Api::instance($controller);
+            return class_exists('vB_Api', false) ? \vB_Api::instance($controller) : null;
         }
 
         return $this->call($controller, $method, $arguments);
     }
 
+    public function resetUser(): void
+    {
+        $this->currentUser = null;
+    }
+
     private function call(string $controller, string $method, array $arguments = []): mixed
     {
-        return \Api_InterfaceAbstract::instance()->callApi($controller, $method, $arguments);
+        if (class_exists('Api_InterfaceAbstract', false) && method_exists('Api_InterfaceAbstract', 'instance')) {
+            return \Api_InterfaceAbstract::instance()->callApi($controller, $method, $arguments);
+        }
+
+        return null;
     }
 }
