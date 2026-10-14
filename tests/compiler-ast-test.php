@@ -104,9 +104,39 @@ try {
     echo "✓ #[Can] without #[Api] threw build ERROR: " . $e->getMessage() . "\n";
 }
 assert($caughtCanWithoutApi, '#[Can] without #[Api] must throw build error');
+unlink($tmpDir . '/src/OrphanCan.php');
+
+// 4. Test: #[Api] guest flag default (false) and explicit (true)
+$code4 = <<<'PHP'
+<?php
+namespace MyAddon\Api;
+
+use VbLaravel\Attributes\Api;
+
+class GuestTestController
+{
+    #[Api(controller: 'test:guest', action: 'defaultWrite', write: true)]
+    public function defaultWrite(): array
+    {
+        return [];
+    }
+
+    #[Api(controller: 'test:guest', action: 'guestWrite', write: true, guest: true)]
+    public function guestWrite(): array
+    {
+        return [];
+    }
+}
+PHP;
+file_put_contents($tmpDir . '/src/GuestTestController.php', $code4);
+$guestApis = Compiler::discoverApis($tmpDir . '/src');
+assert(isset($guestApis['test:guest']), 'Discovered test:guest controller');
+assert($guestApis['test:guest'][0]['guest'] === false, 'Default guest flag is false');
+assert($guestApis['test:guest'][1]['guest'] === true, 'Explicit guest flag is true');
+unlink($tmpDir . '/src/GuestTestController.php');
+echo "✓ #[Api] guest flag (default false, explicit true) verified!\n";
 
 // Cleanup
-unlink($tmpDir . '/src/OrphanCan.php');
 unlink($tmpDir . '/src/TestController.php');
 rmdir($tmpDir . '/src');
 rmdir($tmpDir);

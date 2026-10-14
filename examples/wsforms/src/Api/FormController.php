@@ -34,7 +34,7 @@ class FormController
         write: true
     )]
     #[Can('canview', 'genericpermissions')]
-    public function submit(int $formId, array $values, ?string $securitytoken = null): array
+    public function submit(int $formId, array $values): array
     {
         $form = Form::where('enabled', true)->findOrFail($formId);
 

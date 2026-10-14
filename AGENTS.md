@@ -132,9 +132,11 @@ return new class extends Migration {
 - Handlers **must** accept parameters by reference: `public function onEvent(array &$params): void`.
 
 ### 5.2 API & Permissions (`#[Api]`, `#[Can]`)
-- `#[Api('package:controller', 'action')]`: Declares an exposed API action.
+- `#[Api('package:controller', 'action', write: false, guest: false)]`: Declares an exposed API action.
 - `#[Can('permission', 'group')]`: Allowed **only** on `#[Api]` endpoints.
-- **CSRF Protection**: Write actions (`save*`, `submit*`, `create*`, `delete*`) automatically require and validate `securitytoken`.
+- **CSRF & Write Protection**:
+  - vBulletin 6 automatically validates `securitytoken` for all `POST /ajax/api` calls at the application gateway (`vB5_Frontend_ApplicationLight::execute()` -> `vB_Api_State::checkCSRF()`). Generated API wrappers rely on this native vB6 check.
+  - Endpoints declared with `write: true` reject unauthenticated users (`userid === 0`) with `no_permission` by default (`guest: false`). To allow unauthenticated guest writes, explicitly declare `guest: true`.
 
 ### 5.3 Template Hooks vs PHP Hooks
 - Template hooks rendered via `{vb:hook 'hookname'}` (such as `header_head`) must **not** use `#[Hook]`.

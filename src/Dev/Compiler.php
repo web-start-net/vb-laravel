@@ -369,6 +369,7 @@ final class Compiler
                     'method' => $methodName,
                     'action' => $apiAttr['action'],
                     'write' => $apiAttr['write'],
+                    'guest' => $apiAttr['guest'],
                     'paramSignatures' => $paramSignatures,
                     'callArgs' => $callArgs,
                     'hasSecurityTokenParam' => $hasSecurityTokenParam,
@@ -416,6 +417,7 @@ final class Compiler
         $controller = null;
         $action = null;
         $write = false;
+        $guest = false;
 
         foreach ($attr->args as $i => $arg) {
             $argName = $arg->name ? $arg->name->name : null;
@@ -436,6 +438,11 @@ final class Compiler
                     throw new RuntimeException("Invalid write flag (must be boolean) in #[Api] on {$classFqcn}::{$methodName}() in {$filePath}.");
                 }
                 $write = $val;
+            } elseif ($argName === 'guest' || ($argName === null && $i === 3)) {
+                if (!is_bool($val)) {
+                    throw new RuntimeException("Invalid guest flag (must be boolean) in #[Api] on {$classFqcn}::{$methodName}() in {$filePath}.");
+                }
+                $guest = $val;
             } else {
                 throw new RuntimeException("Unknown argument '{$argName}' in #[Api] on {$classFqcn}::{$methodName}() in {$filePath}.");
             }
@@ -445,7 +452,7 @@ final class Compiler
             throw new RuntimeException("Missing required controller or action in #[Api] on {$classFqcn}::{$methodName}() in {$filePath}.");
         }
 
-        return ['controller' => $controller, 'action' => $action, 'write' => $write];
+        return ['controller' => $controller, 'action' => $action, 'write' => $write, 'guest' => $guest];
     }
 
     private static function parseCanAttribute(Node\Attribute $attr, string $classFqcn, string $methodName, string $filePath): array
@@ -675,30 +682,12 @@ PHP;
                     $apiMethods .= "        }\n\n";
                 }
 
-                // Item 5: Use verify_security_token for write endpoints
-                if ($act['write']) {
-                    $apiMethods .= "        if (!defined('TIMENOW')) {\n";
-                    $apiMethods .= "            define('TIMENOW', time());\n";
-                    $apiMethods .= "        }\n";
-                    $apiMethods .= "        if (!function_exists('verify_security_token') && defined('DIR') && is_file(DIR . '/includes/functions.php')) {\n";
-                    $apiMethods .= "            require_once DIR . '/includes/functions.php';\n";
-                    $apiMethods .= "        }\n";
-                    $apiMethods .= "        \$user = vb()->user();\n";
-                    $apiMethods .= "        \$session = class_exists('\\vB', false) ? \\vB::getCurrentSession() : null;\n";
-                    $apiMethods .= "        \$sessionUser = \$session ? \$session->fetch_userinfo() : [];\n";
-                    $apiMethods .= "        \$rawToken = \$sessionUser['securitytoken_raw'] ?? (\$user['securitytoken_raw'] ?? (\$user['securitytoken'] ?? ''));\n";
-                    $apiMethods .= "        \$validToken = \$user['securitytoken'] ?? '';\n";
-                    if ($act['hasSecurityTokenParam']) {
-                        $apiMethods .= "        \$token = \$securitytoken ?? (string) (\$_POST['securitytoken'] ?? (\$_REQUEST['securitytoken'] ?? ''));\n";
-                    } else {
-                        $apiMethods .= "        \$token = (string) (\$_POST['securitytoken'] ?? (\$_REQUEST['securitytoken'] ?? ''));\n";
-                    }
-                    $apiMethods .= "        \$tokenValid = !empty(\$token) && (\n";
-                    $apiMethods .= "            (function_exists('verify_security_token') && (verify_security_token(\$token, \$rawToken) || verify_security_token(\$token, \$validToken)))\n";
-                    $apiMethods .= "            || \$token === \$validToken\n";
-                    $apiMethods .= "        );\n";
-                    $apiMethods .= "        if (!\$tokenValid) {\n";
-                    $apiMethods .= "            throw new \\vB_Exception_Api('security_token_invalid');\n";
+                // Write endpoints reject unauthenticated users (userid 0) by default (guest: false)
+                // Note: vB6 automatically checks securitytoken (CSRF) for all POST /ajax/api calls at the
+                // frontend application gateway (vB5_Frontend_ApplicationLight::execute() -> checkCSRF()).
+                if ($act['write'] && !$act['guest']) {
+                    $apiMethods .= "        if (vb()->userId() === 0) {\n";
+                    $apiMethods .= "            throw new \\vB_Exception_Api('no_permission');\n";
                     $apiMethods .= "        }\n\n";
                 }
 
