@@ -9,7 +9,7 @@ use WsThanks\Models\Thank;
 
 class ThankController
 {
-    #[Api('wsthanks:thank', 'get')]
+    #[Api('wsthanks:thank', 'get', node: 'nodeid')]
     public function get(int $nodeid): array
     {
         $userId = vb()->userId();
@@ -33,12 +33,17 @@ class ThankController
         ];
     }
 
-    #[Api('wsthanks:thank', 'toggle', write: true)]
+    #[Api('wsthanks:thank', 'toggle', write: true, node: 'nodeid')]
     public function toggle(int $nodeid): array
     {
         $userId = vb()->userId();
         if ($userId === 0) {
             throw new \vB_Exception_Api('no_permission');
+        }
+
+        $node = \vB_Api::instanceInternal('node')->getNode($nodeid);
+        if ($node && (int) ($node['userid'] ?? 0) === (int) $userId) {
+            throw new \vB_Exception_Api('cannot_thank_own_post');
         }
 
         $existing = Thank::query()

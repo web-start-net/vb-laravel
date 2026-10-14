@@ -1,5 +1,5 @@
 <!-- wsratings:conversation_post_above -->
-{vb:set threadNodeId, {vb:if "!empty($conversation['nodeid'])", {vb:raw conversation.nodeid}, {vb:raw nodeid}}}
+{vb:set threadNodeId, {vb:raw conversation.nodeid}}
 <vb:if condition="!empty($threadNodeId)">
 <div class="ws-thread-ratings b-button-group__item" data-nodeid="{vb:raw threadNodeId}" id="ws-ratings-box-{vb:raw threadNodeId}">
     <span class="ws-rating-label">{vb:phrase wsratings_thread_rating}:</span>
@@ -25,6 +25,10 @@
     var msgSpan = document.getElementById('ws-msg-' + nodeId);
 
     function getToken() {
+        var pd = document.getElementById('pagedata');
+        if (pd && pd.getAttribute('data-securitytoken')) {
+            return pd.getAttribute('data-securitytoken');
+        }
         if (typeof vBulletin !== 'undefined' && vBulletin.securitytoken) {
             return vBulletin.securitytoken;
         }
@@ -36,8 +40,20 @@
     }
 
     function getBaseUrl() {
-        if (typeof vBulletin !== 'undefined' && vBulletin.baseurl) {
-            return vBulletin.baseurl;
+        var pd = document.getElementById('pagedata');
+        if (pd && pd.getAttribute('data-baseurl')) {
+            return pd.getAttribute('data-baseurl').replace(/\/+$/, '') + '/';
+        }
+        if (typeof pageData !== 'undefined' && pageData.baseurl) {
+            return pageData.baseurl.replace(/\/+$/, '') + '/';
+        }
+        if (typeof vBulletin !== 'undefined') {
+            if (typeof vBulletin.getAjaxBaseurl === 'function') {
+                return vBulletin.getAjaxBaseurl().replace(/\/+$/, '') + '/';
+            }
+            if (vBulletin.baseurl) {
+                return vBulletin.baseurl.replace(/\/+$/, '') + '/';
+            }
         }
         return '/';
     }
@@ -131,8 +147,20 @@
     });
 
     // Fetch initial stats
-    fetch(getBaseUrl() + 'ajax/api/wsratings.rating/get?nodeid=' + nodeId, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    var getBody = new URLSearchParams();
+    getBody.append('nodeid', nodeId);
+    var initToken = getToken();
+    if (initToken) {
+        getBody.append('securitytoken', initToken);
+    }
+
+    fetch(getBaseUrl() + 'ajax/api/wsratings.rating/get', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: getBody.toString()
     })
     .then(function(res) { return res.json(); })
     .then(function(data) {

@@ -486,7 +486,7 @@ PHP;
     /**
      * Create a new API controller in an add-on.
      */
-    public static function makeApi(string $name, ?string $controller = null, ?string $action = null, bool $write = false, ?string $addonPath = null): string
+    public static function makeApi(string $name, ?string $controller = null, ?string $action = null, bool $write = false, ?string $addonPath = null, ?string $node = null): string
     {
         $addonDir = self::findAddonDir($addonPath);
         $manifest = self::readManifest($addonDir);
@@ -508,6 +508,8 @@ PHP;
         $cIdent = $controller ?? ($manifest['id'] . ':' . strtolower($ctrlBase));
         $actName = $action ?? ($write ? 'save' : 'get');
         $writeAttr = $write ? ', write: true' : '';
+        $nodeAttr = $node ? ", node: '{$node}'" : '';
+        $paramSig = $node ? "int \${$node}" : '';
 
         $code = <<<PHP
 <?php
@@ -521,9 +523,9 @@ use VbLaravel\Attributes\Can;
 
 class {$className}
 {
-    #[Api('{$cIdent}', '{$actName}'{$writeAttr})]
+    #[Api('{$cIdent}', '{$actName}'{$writeAttr}{$nodeAttr})]
     #[Can('canview', 'genericpermissions')]
-    public function {$actName}(): array
+    public function {$actName}({$paramSig}): array
     {
         return [
             'success' => true,

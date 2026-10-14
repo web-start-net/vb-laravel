@@ -15,4 +15,5 @@ return [
     'wsratings_average' => 'Average Rating',
     'wsratings_total_votes' => 'Total Votes',
     'wsratings_already_rated' => 'Your Rating',
+    'wsratings_persian_test' => 'امتیازدهی به موضوع ★ 👍',
 ];

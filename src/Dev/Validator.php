@@ -218,12 +218,104 @@ final class Validator
         $tplHooksDir = $addonPath . '/templates/hooks';
         if (is_dir($tplHooksDir)) {
             $tplHookFiles = glob($tplHooksDir . '/*.html') ?: [];
+            $hooksInventory = $hooksData['template_hooks'] ?? [];
+            $globalVars = [
+                'user', 'options', 'vboptions', 'page', 'pageData', 'phrase',
+                'session', 'structure', 'final_rendered', 'baseurl', 'math'
+            ];
+
             foreach ($tplHookFiles as $thFile) {
                 $thName = basename($thFile, '.html');
                 if (!empty($validTemplateHooks) && !in_array($thName, $validTemplateHooks, true)) {
                     $closest = self::suggestClosest($thName, $validTemplateHooks);
                     $sug = $closest ? " Did you mean '{$closest}'?" : "";
                     $errors[] = "Unknown template hook '{$thName}' in {$thFile}.{$sug}";
+                    continue;
+                }
+
+                $allowedVars = array_merge($globalVars, $hooksInventory[$thName]['variables'] ?? []);
+                $allowedMap = array_fill_keys($allowedVars, true);
+
+                $content = (string) file_get_contents($thFile);
+
+                // Collect locally defined variables
+                // <vb:set var="foo" ...>, {vb:set foo, ...}
+                if (preg_match_all('/<vb:set\s+var=[\'"]([a-zA-Z0-9_]+)[\'"]/i', $content, $m)) {
+                    foreach ($m[1] as $lv) {
+                        $allowedMap[$lv] = true;
+                    }
+                }
+                if (preg_match_all('/\{vb:set\s+([a-zA-Z0-9_]+)/i', $content, $m)) {
+                    foreach ($m[1] as $lv) {
+                        $allowedMap[$lv] = true;
+                    }
+                }
+                // <vb:data foo, ...>, {vb:data foo, ...}
+                if (preg_match_all('/<vb:data\s+([a-zA-Z0-9_]+)/i', $content, $m)) {
+                    foreach ($m[1] as $lv) {
+                        $allowedMap[$lv] = true;
+                    }
+                }
+                if (preg_match_all('/\{vb:data\s+([a-zA-Z0-9_]+)/i', $content, $m)) {
+                    foreach ($m[1] as $lv) {
+                        $allowedMap[$lv] = true;
+                    }
+                }
+                // <vb:each ... value="val" key="k">
+                if (preg_match_all('/<vb:each\b[^>]*\bvalue=[\'"]([a-zA-Z0-9_]+)[\'"]/i', $content, $m)) {
+                    foreach ($m[1] as $lv) {
+                        $allowedMap[$lv] = true;
+                    }
+                }
+                if (preg_match_all('/<vb:each\b[^>]*\bkey=[\'"]([a-zA-Z0-9_]+)[\'"]/i', $content, $m)) {
+                    foreach ($m[1] as $lv) {
+                        $allowedMap[$lv] = true;
+                    }
+                }
+
+                // Check variables used in template expressions
+                $usedVars = [];
+
+                // {vb:raw foo.bar} or {vb:var foo.bar}
+                if (preg_match_all('/\{vb:(?:raw|var)\s+([a-zA-Z0-9_]+)/i', $content, $m)) {
+                    foreach ($m[1] as $uv) {
+                        $usedVars[$uv] = true;
+                    }
+                }
+
+                // $foo in conditions: <vb:if condition="...$foo...">, <vb:elseif condition="...$foo...">, {vb:if "...$foo..."...}
+                if (preg_match_all('/<(?:vb:if|vb:elseif)\s+condition=[\'"]([^\'"]+)[\'"]/i', $content, $m)) {
+                    foreach ($m[1] as $cond) {
+                        if (preg_match_all('/\$([a-zA-Z0-9_]+)/', $cond, $vm)) {
+                            foreach ($vm[1] as $uv) {
+                                $usedVars[$uv] = true;
+                            }
+                        }
+                    }
+                }
+                if (preg_match_all('/\{vb:if\s+[\'"]([^\'"]+)[\'"]/i', $content, $m)) {
+                    foreach ($m[1] as $cond) {
+                        if (preg_match_all('/\$([a-zA-Z0-9_]+)/', $cond, $vm)) {
+                            foreach ($vm[1] as $uv) {
+                                $usedVars[$uv] = true;
+                            }
+                        }
+                    }
+                }
+
+                // <vb:each from="foo.bar" ...>
+                if (preg_match_all('/<vb:each\b[^>]*\bfrom=[\'"]([a-zA-Z0-9_]+)/i', $content, $m)) {
+                    foreach ($m[1] as $uv) {
+                        $usedVars[$uv] = true;
+                    }
+                }
+
+                foreach (array_keys($usedVars) as $uv) {
+                    if (!isset($allowedMap[$uv])) {
+                        $hookAllowed = $hooksInventory[$thName]['variables'] ?? [];
+                        $allowedListStr = empty($hookAllowed) ? 'none (only globals available)' : implode(', ', $hookAllowed);
+                        $errors[] = "Template hook '{$thName}' in {$thFile} uses variable '{$uv}' which is not provided by hook '{$thName}'. Allowed variables: [{$allowedListStr}].";
+                    }
                 }
             }
         }

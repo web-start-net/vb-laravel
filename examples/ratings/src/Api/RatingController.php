@@ -10,7 +10,7 @@ use WsRatings\Models\Rating;
 
 class RatingController
 {
-    #[Api('wsratings:rating', 'get')]
+    #[Api('wsratings:rating', 'get', node: 'nodeid')]
     #[Can('canview', 'genericpermissions')]
     public function get(int $nodeid): array
     {
@@ -37,7 +37,7 @@ class RatingController
         ];
     }
 
-    #[Api('wsratings:rating', 'rate', write: true)]
+    #[Api('wsratings:rating', 'rate', write: true, node: 'nodeid')]
     #[Can('canview', 'genericpermissions')]
     public function rate(int $nodeid, int $rating): array
     {

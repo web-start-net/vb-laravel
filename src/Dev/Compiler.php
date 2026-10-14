@@ -394,6 +394,7 @@ final class Compiler
                     'returnType' => $returnType,
                     'canPerm' => $canAttr ? $canAttr['permission'] : null,
                     'canGroup' => $canAttr ? $canAttr['group'] : 'genericpermissions',
+                    'node' => $apiAttr['node'],
                 ];
             }
         }
@@ -436,6 +437,7 @@ final class Compiler
         $action = null;
         $write = false;
         $guest = false;
+        $node = null;
 
         foreach ($attr->args as $i => $arg) {
             $argName = $arg->name ? $arg->name->name : null;
@@ -461,6 +463,11 @@ final class Compiler
                     throw new RuntimeException("Invalid guest flag (must be boolean) in #[Api] on {$classFqcn}::{$methodName}() in {$filePath}.");
                 }
                 $guest = $val;
+            } elseif ($argName === 'node' || ($argName === null && $i === 4)) {
+                if (!is_string($val) || $val === '') {
+                    throw new RuntimeException("Invalid node parameter name in #[Api] on {$classFqcn}::{$methodName}() in {$filePath}.");
+                }
+                $node = $val;
             } else {
                 throw new RuntimeException("Unknown argument '{$argName}' in #[Api] on {$classFqcn}::{$methodName}() in {$filePath}.");
             }
@@ -470,7 +477,7 @@ final class Compiler
             throw new RuntimeException("Missing required controller or action in #[Api] on {$classFqcn}::{$methodName}() in {$filePath}.");
         }
 
-        return ['controller' => $controller, 'action' => $action, 'write' => $write, 'guest' => $guest];
+        return ['controller' => $controller, 'action' => $action, 'write' => $write, 'guest' => $guest, 'node' => $node];
     }
 
     private static function parseCanAttribute(Node\Attribute $attr, string $classFqcn, string $methodName, string $filePath): array
@@ -700,6 +707,21 @@ PHP;
                     $apiMethods .= "        }\n\n";
                 }
 
+                if (!empty($act['node'])) {
+                    $nodeParam = addslashes($act['node']);
+                    $apiMethods .= "        try {\n";
+                    $apiMethods .= "            \$node = \\vB_Api::instanceInternal('node')->getNode((int) \${$nodeParam});\n";
+                    $apiMethods .= "            if (!\$node || !empty(\$node['errors'])) {\n";
+                    $apiMethods .= "                throw new \\vB_Exception_Api('invalid_node');\n";
+                    $apiMethods .= "            }\n";
+                    $apiMethods .= "        } catch (\\vB_Exception_Api \$e) {\n";
+                    $apiMethods .= "            if (\$e->getMessage() === 'no_permission') {\n";
+                    $apiMethods .= "                throw \$e;\n";
+                    $apiMethods .= "            }\n";
+                    $apiMethods .= "            throw new \\vB_Exception_Api('invalid_node');\n";
+                    $apiMethods .= "        }\n\n";
+                }
+
                 // Write endpoints reject unauthenticated users (userid 0) by default (guest: false)
                 // Note: vB6 automatically checks securitytoken (CSRF) for all POST /ajax/api calls at the
                 // frontend application gateway (vB5_Frontend_ApplicationLight::execute() -> checkCSRF()).
@@ -825,7 +847,7 @@ PHP;
             "}\n"
         );
 
-        $xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+        $xml = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n";
         $xml .= "<product productid=\"{$id}\" active=\"1\">\n";
         $xml .= "    <title>{$titleEsc}</title>\n";
         $xml .= "    <description>{$descEsc}</description>\n";

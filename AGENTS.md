@@ -138,12 +138,16 @@ return new class extends Migration {
 - Handlers **must** accept parameters by reference: `public function onEvent(array &$params): void`.
 
 ### 5.2 API Controllers, Permissions & Error Convention (`#[Api]`, `#[Can]`)
-- `#[Api('package:controller', 'action', write: false, guest: false)]`: Declares an exposed API action.
+- `#[Api('package:controller', 'action', write: false, guest: false, node: null)]`: Declares an exposed API action.
+  - `write`: Set to `true` for mutating actions (checks CSRF token and rejects guests by default).
+  - `guest`: Set to `true` if an action (especially a write action) is explicitly permitted for unauthenticated guests (`userid === 0`). Defaults to `false` for write endpoints.
+  - `node`: Name of a parameter representing a vBulletin node ID (e.g. `node: 'nodeid'`). The generated wrapper automatically queries `\vB_Api::instanceInternal('node')->getNode((int) $nodeid)`. If the node does not exist or the current viewer has no permission to view it, `\vB_Exception_Api('invalid_node')` is thrown before invoking the controller method.
 - `#[Can('permission', 'group')]`: Allowed **only** on `#[Api]` endpoints.
 - **Error Convention**:
-  - Always throw `\vB_Exception_Api('phrase_key')` on error (e.g. `throw new \vB_Exception_Api('no_permission');`).
+  - Always throw `\vB_Exception_Api('phrase_key')` on error (e.g. `throw new \vB_Exception_Api('no_permission');` or `throw new \vB_Exception_Api('cannot_thank_own_post');`).
   - vBulletin's API gateway catches `\vB_Exception_Api` and translates it into standard JSON: `{"errors":[["phrase_key"]],"userid":...}`. Do not return custom `['error' => '...']` arrays.
-- **CSRF & Write Protection**:
+- **CSRF & HTTP Method Requirement**:
+  - In vBulletin 6, **all `/ajax/api/...` endpoints require HTTP POST**. `vB5_Frontend_ApplicationLight` enforces `requirePost` on the `ajax/api` route; calling `/ajax/api` with HTTP `GET` always throws `vB5_Exception('Incorrect HTTP Method. Please use a POST request.')`.
   - vBulletin 6 automatically validates `securitytoken` for all `POST /ajax/api` calls at the application gateway (`vB5_Frontend_ApplicationLight::execute()` -> `vB_Api_State::checkCSRF()`). Generated API wrappers rely on this native vB6 check.
   - Endpoints declared with `write: true` reject unauthenticated users (`userid === 0`) with `no_permission` by default (`guest: false`). To allow unauthenticated guest writes, explicitly declare `guest: true`.
   - **Important**: Never call `write: true` API methods from vBulletin templates (`{vb:data}`) — CSRF validation is only enforced on `POST /ajax/api`. Template data calls are strictly read-only.
@@ -151,22 +155,53 @@ return new class extends Migration {
 ### 5.3 Calling APIs from JavaScript
 To call an add-on API endpoint from the frontend browser:
 - **Endpoint URL**: `/ajax/api/<package>.<controller>/<action>` (e.g. `/ajax/api/wsratings.rating/rate`).
-- **CSRF Token**: vBulletin makes the active session token available in:
-  1. `vBulletin.securitytoken` (if global `vBulletin` object is present)
-  2. Global `SECURITYTOKEN`
-  3. Hidden form field: `document.querySelector('input[name="securitytoken"]')?.value`
-- **Copy-Paste JavaScript Pattern**:
+- **HTTP Method**: Must **always** be `POST` (even for read operations).
+- **CSRF Token & Base URL Resolution**:
+  Always inspect `#pagedata` first, followed by global runtime variables:
+- **Robust Copy-Paste JavaScript Pattern**:
 ```javascript
+function getToken() {
+    var pd = document.getElementById('pagedata');
+    if (pd && pd.getAttribute('data-securitytoken')) {
+        return pd.getAttribute('data-securitytoken');
+    }
+    if (typeof vBulletin !== 'undefined' && vBulletin.securitytoken) {
+        return vBulletin.securitytoken;
+    }
+    if (typeof SECURITYTOKEN !== 'undefined') {
+        return SECURITYTOKEN;
+    }
+    var input = document.querySelector('input[name="securitytoken"]');
+    return input ? input.value : '';
+}
+
+function getBaseUrl() {
+    var pd = document.getElementById('pagedata');
+    if (pd && pd.getAttribute('data-baseurl')) {
+        return pd.getAttribute('data-baseurl').replace(/\/+$/, '') + '/';
+    }
+    if (typeof pageData !== 'undefined' && pageData.baseurl) {
+        return pageData.baseurl.replace(/\/+$/, '') + '/';
+    }
+    if (typeof vBulletin !== 'undefined') {
+        if (typeof vBulletin.getAjaxBaseurl === 'function') {
+            return vBulletin.getAjaxBaseurl().replace(/\/+$/, '') + '/';
+        }
+        if (vBulletin.baseurl) {
+            return vBulletin.baseurl.replace(/\/+$/, '') + '/';
+        }
+    }
+    return '/';
+}
+
 function callAddonApi(endpoint, data) {
-    var baseUrl = (typeof vBulletin !== 'undefined' && vBulletin.baseurl) ? vBulletin.baseurl : '/';
-    var token = (typeof vBulletin !== 'undefined' && vBulletin.securitytoken) 
-        ? vBulletin.securitytoken 
-        : ((typeof SECURITYTOKEN !== 'undefined') ? SECURITYTOKEN : '');
+    var body = new URLSearchParams(data || {});
+    var token = getToken();
+    if (token) {
+        body.append('securitytoken', token);
+    }
 
-    var body = new URLSearchParams(data);
-    body.append('securitytoken', token);
-
-    return fetch(baseUrl + 'ajax/api/' + endpoint, {
+    return fetch(getBaseUrl() + 'ajax/api/' + endpoint, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -194,18 +229,21 @@ callAddonApi('wsratings.rating/rate', {
 ### 5.4 Common Template Hooks & Variables
 Template hooks are rendered by vBulletin templates via `{vb:hook 'hookname'}`.
 Create template hooks under `<addon>/templates/hooks/<hookname>.html`.
+The `vbl validate` tool automatically checks `{vb:raw ...}`, `{vb:var ...}`, `<vb:if condition="...">`, and `<vb:each>` tags against the verified in-scope variables defined in `data/vb6-hooks.json`:
 
 | Hook Name | Common Location | In Scope Variables |
 |---|---|---|
 | `header_head` | Inside `<head>` on all forum pages | `page`, `baseurl` |
 | `header_after_body_begin` | Immediately after `<body>` opens | `page`, `baseurl` |
 | `header_before_content` | Main content wrapper start | `page`, `baseurl` |
-| `conversation_display_controls` | Thread toolbar beside Follow/Share button | `nodeid`, `conversation`, `page` |
-| `conversation_before_display_controls` | Before the thread toolbar button group | `nodeid`, `page` |
-| `conversation_above_entry` | Above the thread reply box | `nodeid`, `page` |
-| `conversation_below_entry` | Below the thread reply box | `nodeid`, `page` |
-| `conversation_post_above` | Directly above an individual post/reply | `conversation`, `starter`, `postStatus` |
-| `conversation_post_below` | Directly below an individual post/reply | `conversation`, `starter`, `postStatus` |
+| `conversation_display_controls` | Thread toolbar beside Follow/Share button | `conversation`, `nodeid`, `page` |
+| `conversation_before_display_controls` | Before the thread toolbar button group | `conversation`, `nodeid`, `page` |
+| `conversation_above_entry` | Above the thread reply box | `conversation`, `nodeid`, `page` |
+| `conversation_below_entry` | Below the thread reply box | `conversation`, `nodeid`, `page` |
+| `conversation_post_above` | Directly above an individual post/reply | `conversation` |
+| `conversation_post_below` | Directly below an individual post/reply | `conversation` |
+| `conversation_footerright` | Inside post action controls list (Reply/Quote/etc.) | `conversation` |
+| `conversation_footerleft` | Left side of post footer | `conversation` |
 | `conversation_userstats` | User stats block in postbit | `conversation`, `userInfo` |
 | `forumitem_below_description` | Below channel description in forum list | `forum`, `avatar` |
 | `forumlist_before_categories` | Top of the forum channel list | `channel`, `forum` |
@@ -325,8 +363,15 @@ The repository contains three complete, production-grade example add-ons demonst
 3. **`examples/ratings`** (`wsratings`):
    - 5-star thread rating system built and verified by AI.
    - Table `wsratings_ratings` tracking `nodeid`, `userid`, `rating` (1–5), `dateline`.
-   - API endpoints: `get` (stats & user rating), `rate` (authenticated `write: true`).
+   - API endpoints: `get` (stats & user rating), `rate` (authenticated `write: true`, `node: 'nodeid'`).
    - Interactive star rating JavaScript with CSRF securitytoken handling.
-   - Template hooks: `templates/hooks/conversation_display_controls.html` and `templates/hooks/header_head.html`.
+   - Template hooks: `templates/hooks/conversation_post_above.html` and `templates/hooks/header_head.html`.
    - AdminCP setting `wsratings_enabled` and frontend phrases.
+
+4. **`examples/thanks`** (`wsthanks`):
+   - Per-post "Thank" button rendered inside the post control bar.
+   - Table `wsthanks_thanks` tracking `nodeid`, `userid`, `created_at` with unique compound index.
+   - API endpoints: `get` (per-node thank count and viewer thank state), `toggle` (`write: true`, `node: 'nodeid'`).
+   - Self-thanking prevention throwing `\vB_Exception_Api('cannot_thank_own_post')`.
+   - Template hook in `conversation_footerright.html` rendered seamlessly per post in thread view.
 

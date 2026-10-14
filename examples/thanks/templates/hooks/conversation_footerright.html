@@ -1,0 +1,150 @@
+<!-- wsthanks:conversation_footerright -->
+<li class="b-post-control b-post-control--always js-post-control__thank js-thank-box js-link"
+    id="ws-thanks-box-{vb:raw conversation.nodeid}"
+    data-nodeid="{vb:raw conversation.nodeid}"
+    tabindex="0"
+    role="button"
+    title="{vb:phrase wsthanks_thank}">
+    <span class="b-icon-fa b-icon-fa--24 b-post-control__icon fa-regular fa-thumbs-up ws-thanks-icon" aria-hidden="true">👍</span>
+    <span class="b-post-control__label ws-thanks-label" id="ws-thanks-label-{vb:raw conversation.nodeid}">{vb:phrase wsthanks_thank}</span>
+    <span class="ws-thanks-count" id="ws-thanks-count-{vb:raw conversation.nodeid}" style="font-weight:600;margin-left:4px;font-size:12px;">0</span>
+    <span class="ws-thanks-msg" id="ws-thanks-msg-{vb:raw conversation.nodeid}" style="margin-left:4px;font-size:11px;"></span>
+</li>
+
+<script>
+(function() {
+    var nodeId = {vb:raw conversation.nodeid};
+    var container = document.getElementById('ws-thanks-box-' + nodeId);
+    if (!container) return;
+
+    var labelSpan = document.getElementById('ws-thanks-label-' + nodeId);
+    var countSpan = document.getElementById('ws-thanks-count-' + nodeId);
+    var msgSpan = document.getElementById('ws-thanks-msg-' + nodeId);
+
+    function getToken() {
+        var pd = document.getElementById('pagedata');
+        if (pd && pd.getAttribute('data-securitytoken')) {
+            return pd.getAttribute('data-securitytoken');
+        }
+        if (typeof vBulletin !== 'undefined' && vBulletin.securitytoken) {
+            return vBulletin.securitytoken;
+        }
+        if (typeof SECURITYTOKEN !== 'undefined') {
+            return SECURITYTOKEN;
+        }
+        var input = document.querySelector('input[name="securitytoken"]');
+        return input ? input.value : '';
+    }
+
+    function getBaseUrl() {
+        var pd = document.getElementById('pagedata');
+        if (pd && pd.getAttribute('data-baseurl')) {
+            return pd.getAttribute('data-baseurl').replace(/\/+$/, '') + '/';
+        }
+        if (typeof pageData !== 'undefined' && pageData.baseurl) {
+            return pageData.baseurl.replace(/\/+$/, '') + '/';
+        }
+        if (typeof vBulletin !== 'undefined') {
+            if (typeof vBulletin.getAjaxBaseurl === 'function') {
+                return vBulletin.getAjaxBaseurl().replace(/\/+$/, '') + '/';
+            }
+            if (vBulletin.baseurl) {
+                return vBulletin.baseurl.replace(/\/+$/, '') + '/';
+            }
+        }
+        return '/';
+    }
+
+    function updateState(count, userThanked) {
+        if (typeof count !== 'undefined' && countSpan) {
+            countSpan.textContent = count;
+        }
+        if (container && labelSpan) {
+            if (userThanked) {
+                container.classList.add('thanked', 'active');
+                container.setAttribute('aria-pressed', 'true');
+                container.setAttribute('title', '{vb:phrase wsthanks_unthank}');
+                labelSpan.textContent = '{vb:phrase wsthanks_unthank}';
+            } else {
+                container.classList.remove('thanked', 'active');
+                container.setAttribute('aria-pressed', 'false');
+                container.setAttribute('title', '{vb:phrase wsthanks_thank}');
+                labelSpan.textContent = '{vb:phrase wsthanks_thank}';
+            }
+        }
+    }
+
+    // Toggle thank on click
+    container.addEventListener('click', function(e) {
+        e.preventDefault();
+        var token = getToken();
+
+        if (msgSpan) {
+            msgSpan.textContent = '';
+            msgSpan.className = 'ws-thanks-msg';
+        }
+
+        var body = new URLSearchParams();
+        body.append('nodeid', nodeId);
+        body.append('securitytoken', token);
+
+        fetch(getBaseUrl() + 'ajax/api/wsthanks.thank/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: body.toString()
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.errors && data.errors.length) {
+                var errCode = data.errors[0][0] || 'error';
+                if (msgSpan) {
+                    var msg = 'Error: ' + errCode;
+                    if (errCode === 'no_permission') msg = 'Please log in to thank posts.';
+                    else if (errCode === 'cannot_thank_own_post') msg = '{vb:phrase wsthanks_cannot_thank_own_post}';
+                    msgSpan.textContent = msg;
+                    msgSpan.className = 'ws-thanks-msg error';
+                    setTimeout(function() { msgSpan.textContent = ''; }, 3000);
+                }
+                return;
+            }
+            if (data.success) {
+                updateState(data.count, data.thanked);
+            }
+        })
+        .catch(function(err) {
+            if (msgSpan) {
+                msgSpan.textContent = 'Request failed.';
+                msgSpan.className = 'ws-thanks-msg error';
+                setTimeout(function() { msgSpan.textContent = ''; }, 3000);
+            }
+        });
+    });
+
+    // Fetch initial count & thank status
+    var getBody = new URLSearchParams();
+    getBody.append('nodeid', nodeId);
+    var initToken = getToken();
+    if (initToken) {
+        getBody.append('securitytoken', initToken);
+    }
+
+    fetch(getBaseUrl() + 'ajax/api/wsthanks.thank/get', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: getBody.toString()
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (!data.errors && typeof data.count !== 'undefined') {
+            updateState(data.count, data.user_thanked);
+        }
+    })
+    .catch(function() {});
+})();
+</script>

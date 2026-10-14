@@ -107,14 +107,15 @@ try {
         case 'make:api':
             $name = $args[0] ?? null;
             if (!$name) {
-                echo "Usage: vbl make:api <Name> [--controller=ctrl] [--action=act] [--write] [--addon=path]\n";
+                echo "Usage: vbl make:api <Name> [--controller=ctrl] [--action=act] [--write] [--node=nodeid] [--addon=path]\n";
                 exit(1);
             }
             $ctrl = isset($options['controller']) ? (string) $options['controller'] : null;
             $act = isset($options['action']) ? (string) $options['action'] : null;
             $write = isset($options['write']) && $options['write'];
+            $node = isset($options['node']) ? (string) $options['node'] : null;
             $addon = isset($options['addon']) ? (string) $options['addon'] : null;
-            $file = Generator::makeApi($name, $ctrl, $act, $write, $addon);
+            $file = Generator::makeApi($name, $ctrl, $act, $write, $addon, $node);
             echo "✓ API Controller created: {$file}\n";
             exit(0);
 

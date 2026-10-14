@@ -9,4 +9,5 @@ return [
     'wsthanks_thank' => 'Thank',
     'wsthanks_unthank' => 'Remove Thank',
     'wsthanks_thanks' => 'Thanks',
+    'wsthanks_cannot_thank_own_post' => 'You cannot thank your own post.',
 ];

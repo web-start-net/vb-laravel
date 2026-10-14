@@ -13,7 +13,8 @@ final class Api
         public string $controller,
         public ?string $action = null,
         public bool $write = false,
-        public bool $guest = false
+        public bool $guest = false,
+        public ?string $node = null
     ) {
     }
 }
