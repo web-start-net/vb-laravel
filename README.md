@@ -30,7 +30,7 @@ if (!vb()->can('can_submit_forms')) {
 
 ---
 
-## 🚀 Key Features in 0.2.0
+## 🚀 Key Features in 0.3.0
 
 - ⚡ **Zero Overhead (Lazy Boot)**: Illuminate only boots when an add-on specifically requests it. Normal forum traffic is unaffected.
 - 📦 **Dynamic PSR-4 Autoloading**: Add-on models, controllers, and services are automatically autoloaded. No manual `require_once` statements needed!
@@ -76,75 +76,39 @@ For forum administrators:
 
 ---
 
-## 🛠️ Building an Add-on in 3 Steps
+## 🛠️ Building an Add-on with the `vbl` CLI
 
-### 1. Structure
+VB Laravel provides a complete CLI toolkit for scaffolding, developing, and packaging add-ons:
 
-Create your package under `core/packages/myaddon/`:
+```bash
+# 1. Scaffold a complete working add-on in seconds
+php bin/vbl make:addon myaddon --title="My Add-on"
 
-```text
-core/packages/myaddon/
-├── product.php
-├── vb-addon.json
-├── src/
-│   ├── Provider.php
-│   └── Models/
-│       └── Bookmark.php
-└── xml/
-    └── product_myaddon.xml
+# 2. Add granular components
+php bin/vbl make:model Review --table=myaddon_reviews
+php bin/vbl make:migration create_reviews_table
+php bin/vbl make:hook ContentListener --hook=hookFrontendContentAfterAdd
+php bin/vbl make:api Review --controller=myaddon:review --action=submit --write
+php bin/vbl make:template toolbar --hook
+
+# 3. Validate conventions, schema, and AST attributes
+php bin/vbl validate myaddon
+
+# 4. Develop: build, copy, and auto-import into local test forum in one step
+php bin/vbl dev myaddon --target=/path/to/vb/core
+
+# 5. Package for distribution: generates upload-ready admin zip
+php bin/vbl package myaddon
 ```
 
-### 2. Manifest (`vb-addon.json`)
+---
 
-Declare your add-on identity and service provider:
+## 📚 Example Add-ons
 
-```json
-{
-  "id": "Vendor/MyAddon",
-  "title": "My Add-on",
-  "version": "1.0.0",
-  "runtime": "^0.2",
-  "provider": "Vendor\\MyAddon\\Provider"
-}
-```
-
-### 3. Service Provider (`src/Provider.php`)
-
-```php
-namespace Vendor\MyAddon;
-
-use Illuminate\Support\ServiceProvider;
-
-class Provider extends ServiceProvider
-{
-    public function register(): void
-    {
-        // Bind services to the container
-    }
-
-    public function boot(): void
-    {
-        // Eloquent is already booted and connected!
-    }
-}
-```
-
-### 4. Use Eloquent Models with Zero Boilerplate (`src/Models/Bookmark.php`)
-
-```php
-namespace Vendor\MyAddon\Models;
-
-use Illuminate\Database\Eloquent\Model;
-
-class Bookmark extends Model
-{
-    protected $table = 'myaddon_bookmarks';
-    protected $primaryKey = 'bookmarkid';
-    protected $guarded = [];
-}
-```
-
-Because of dynamic PSR-4 autoloading, you can instantly use `Vendor\MyAddon\Models\Bookmark` in your controllers or vBulletin hooks without any manual `require_once`!
+Explore production-grade implementations in the `examples/` directory:
+- [**`examples/bookmarks`**](examples/bookmarks): Eloquent models, bookmarks table migration, PHP hooks, and read/write APIs.
+- [**`examples/wsforms`**](examples/wsforms): Multi-table migrations, form submission APIs, AdminCP settings, and permission gates.
+- [**`examples/ratings`**](examples/ratings): 5-star thread rating system with interactive template hooks, write API, and settings.
 
 ---
 
@@ -155,7 +119,8 @@ Because of dynamic PSR-4 autoloading, you can instantly use `Vendor\MyAddon\Mode
 | `vb()->userId()` | Current logged-in user ID as integer (`0` if guest). |
 | `vb()->isLoggedIn()` | Returns `true` if current visitor is authenticated. |
 | `vb()->user()` | Fetches complete current userinfo array. |
-| `vb()->can('perm', 'group')` | Checks native vBulletin user permissions. |
+| `vb()->inGroup([6, 7])` | Checks if visitor belongs to any of the specified usergroup IDs. |
+| `vb()->can('perm', 'group')` | Checks native vBulletin user permissions safely. |
 | `vb()->setting('varname', $default)` | Reads an option directly from vBulletin datastore. |
 | `vb()->session()` | Gets the current native session instance. |
 | `vb()->phrase('name')` | Fetches a vBulletin phrase translation. |
@@ -181,11 +146,17 @@ Because of dynamic PSR-4 autoloading, you can instantly use `Vendor\MyAddon\Mode
 
 ## 🧪 Testing
 
-Run the included verification tests with PHP:
+Run the automated test suite with PHP:
 
 ```bash
-php tests/poc.php
-php tests/package-layout.php
+# Unit & AST Tests
+php tests/compiler-ast-test.php
+php tests/read-only-model-test.php
+php tests/provider-lifecycle-test.php
+php tests/cli-generators-test.php
+
+# Live vBulletin End-to-End Suite (requires local vB install)
+php tests/e2e-verify-suite.php
 ```
 
 ---

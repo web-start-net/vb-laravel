@@ -25,8 +25,7 @@ spl_autoload_register(static function (string $class): void {
         || $class === 'VbLaravel\\Migrator'
     ) {
         if (!\VbLaravel\Runtime::isBooted()) {
-            \VbLaravel\Runtime::boot(__DIR__);
-            spl_autoload_call($class);
+            \VbLaravel\Runtime::boot(__DIR__, $class);
         }
         if ($class === 'VbLaravel\\Migrator') {
             $file = __DIR__ . '/src/Migrator.php';

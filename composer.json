@@ -1,6 +1,7 @@
 {
     "name": "vb-laravel/runtime",
     "description": "A lightweight Illuminate runtime and vBulletin bridge.",
+    "license": "MIT",
     "type": "library",
     "require": {
         "php": ">=8.2",

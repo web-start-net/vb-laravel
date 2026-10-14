@@ -13,47 +13,198 @@ if (is_file(__DIR__ . '/../vendor/autoload.php')) {
 
 require_once __DIR__ . '/../src/Dev/Validator.php';
 require_once __DIR__ . '/../src/Dev/Compiler.php';
+require_once __DIR__ . '/../src/Dev/Generator.php';
 
 use VbLaravel\Dev\Compiler;
+use VbLaravel\Dev\Generator;
 use VbLaravel\Dev\Validator;
 
 $argv = $_SERVER['argv'];
 $command = $argv[1] ?? 'help';
-$target = $argv[2] ?? '.';
 
-switch ($command) {
-    case 'validate':
-        echo "Validating add-on at: {$target}...\n";
-        $errors = Validator::validate($target);
-        if (empty($errors)) {
-            echo "✓ Validation passed successfully!\n";
-            exit(0);
+// Parse arguments and options (--key=value, --flag)
+$args = [];
+$options = [];
+for ($i = 2; $i < count($argv); $i++) {
+    $arg = $argv[$i];
+    if (str_starts_with($arg, '--')) {
+        $opt = substr($arg, 2);
+        if (str_contains($opt, '=')) {
+            [$k, $v] = explode('=', $opt, 2);
+            $options[$k] = $v;
         } else {
+            $options[$opt] = true;
+        }
+    } else {
+        $args[] = $arg;
+    }
+}
+
+try {
+    switch ($command) {
+        case 'make:addon':
+            $id = $args[0] ?? null;
+            if (!$id) {
+                echo "Usage: vbl make:addon <id> --title=\"My Add-on\" [--dir=path] [--folder=name]\n";
+                exit(1);
+            }
+            $title = $options['title'] ?? ucfirst($id);
+            $dir = isset($options['dir']) ? (string) $options['dir'] : null;
+            $folder = isset($options['folder']) ? (string) $options['folder'] : null;
+            echo "Scaffolding add-on '{$id}'...\n";
+            $createdDir = Generator::makeAddon($id, (string) $title, $dir, $folder);
+            echo "✓ Add-on successfully created at: {$createdDir}\n";
+
+            // Run validation immediately
+            $errors = Validator::validate($createdDir);
+            if (!empty($errors)) {
+                echo "✗ Scaffolding validation warning:\n";
+                foreach ($errors as $e) {
+                    echo "  - {$e}\n";
+                }
+                exit(1);
+            }
+            echo "✓ Verified manifest, attributes, and migrations (0 errors)\n";
+            exit(0);
+
+        case 'make:model':
+            $name = $args[0] ?? null;
+            if (!$name) {
+                echo "Usage: vbl make:model <Name> [--table=table_name] [--addon=path]\n";
+                exit(1);
+            }
+            $table = isset($options['table']) ? (string) $options['table'] : null;
+            $addon = isset($options['addon']) ? (string) $options['addon'] : null;
+            $file = Generator::makeModel($name, $table, $addon);
+            echo "✓ Model created: {$file}\n";
+            exit(0);
+
+        case 'make:migration':
+            $name = $args[0] ?? null;
+            if (!$name) {
+                echo "Usage: vbl make:migration <name> [--table=table_name] [--addon=path]\n";
+                exit(1);
+            }
+            $table = isset($options['table']) ? (string) $options['table'] : null;
+            $addon = isset($options['addon']) ? (string) $options['addon'] : null;
+            $file = Generator::makeMigration($name, $table, $addon);
+            echo "✓ Migration created: {$file}\n";
+            exit(0);
+
+        case 'make:hook':
+            $name = $args[0] ?? null;
+            if (!$name) {
+                echo "Usage: vbl make:hook <Name> [--hook=hookName] [--order=10] [--addon=path]\n";
+                exit(1);
+            }
+            $hookName = (string) ($options['hook'] ?? 'hookFrontendContentAfterAdd');
+            $order = isset($options['order']) ? (int) $options['order'] : 10;
+            $addon = isset($options['addon']) ? (string) $options['addon'] : null;
+            $file = Generator::makeHook($name, $hookName, $order, $addon);
+            echo "✓ Hook created: {$file}\n";
+            exit(0);
+
+        case 'make:api':
+            $name = $args[0] ?? null;
+            if (!$name) {
+                echo "Usage: vbl make:api <Name> [--controller=ctrl] [--action=act] [--write] [--addon=path]\n";
+                exit(1);
+            }
+            $ctrl = isset($options['controller']) ? (string) $options['controller'] : null;
+            $act = isset($options['action']) ? (string) $options['action'] : null;
+            $write = isset($options['write']) && $options['write'];
+            $addon = isset($options['addon']) ? (string) $options['addon'] : null;
+            $file = Generator::makeApi($name, $ctrl, $act, $write, $addon);
+            echo "✓ API Controller created: {$file}\n";
+            exit(0);
+
+        case 'make:template':
+            $name = $args[0] ?? null;
+            if (!$name) {
+                echo "Usage: vbl make:template <name> [--hook] [--addon=path]\n";
+                exit(1);
+            }
+            $isHook = isset($options['hook']) && $options['hook'];
+            $addon = isset($options['addon']) ? (string) $options['addon'] : null;
+            $file = Generator::makeTemplate($name, $isHook, $addon);
+            echo "✓ Template created: {$file}\n";
+            exit(0);
+
+        case 'validate':
+            $target = $args[0] ?? '.';
+            echo "Validating add-on at: {$target}...\n";
+            $errors = Validator::validate($target);
+            if (empty($errors)) {
+                echo "✓ Validation passed successfully!\n";
+                exit(0);
+            }
             echo "✗ Validation failed:\n";
             foreach ($errors as $err) {
                 echo "  - {$err}\n";
             }
             exit(1);
-        }
 
-    case 'build':
-        $out = $argv[3] ?? null;
-        echo "Building add-on at: {$target}...\n";
-        try {
-            $xml = Compiler::build($target, $out);
+        case 'build':
+            $target = $args[0] ?? '.';
+            $out = $args[1] ?? ($options['output'] ?? null);
+            echo "Building add-on at: {$target}...\n";
+            $xml = Compiler::build($target, $out ? (string) $out : null);
             echo "✓ Build complete! Generated product XML: {$xml}\n";
             exit(0);
-        } catch (Throwable $e) {
-            echo "✗ Build failed: " . $e->getMessage() . "\n";
-            exit(1);
-        }
 
-    case 'help':
-    default:
-        echo "vBulletin Laravel (vbl) CLI Tool\n\n";
-        echo "Usage:\n";
-        echo "  vbl validate <path-to-addon>         Validate manifest, attributes, and migrations\n";
-        echo "  vbl build <path-to-addon> [out-dir]  Compile templates, phrases, settings, and hooks to product XML\n";
-        echo "  vbl help                             Display this help message\n";
-        exit(0);
+        case 'dev':
+            $target = $args[0] ?? '.';
+            $vbCore = isset($options['target']) ? (string) $options['target'] : null;
+            echo "Deploying add-on '{$target}' to development environment...\n";
+            $res = Generator::devDeploy($target, $vbCore);
+            echo "✓ Build complete: {$res['xmlFile']}\n";
+            echo "✓ Package deployed to: {$res['packageDir']}\n";
+            if ($res['imported']) {
+                echo "✓ Product XML imported & datastore rebuilt successfully!\n";
+            } else {
+                echo "⚠ Product XML copied, but automated CLI import did not confirm SUCCESS.\n";
+            }
+            exit(0);
+
+        case 'package':
+            $target = $args[0] ?? '.';
+            $out = isset($options['output']) ? (string) $options['output'] : null;
+            echo "Packaging add-on at: {$target}...\n";
+            $zip = Generator::packageAddon($target, $out);
+            $size = filesize($zip);
+            echo "✓ Upload-ready distribution package created: {$zip} ({$size} bytes)\n";
+            exit(0);
+
+        case 'release':
+            $ver = $args[0] ?? null;
+            echo "Synchronizing single source of truth (src/ -> package/)...\n";
+            $syncRes = Generator::syncVblaravelPackage(null, $ver ? (string) $ver : null);
+            $count = count($syncRes['copied']);
+            echo "✓ Synchronized {$count} runtime files to package/core/packages/vblaravel/src/\n";
+            if ($syncRes['version']) {
+                echo "✓ Version bumped to: {$syncRes['version']}\n";
+            }
+            exit(0);
+
+        case 'help':
+        default:
+            echo "vBulletin Laravel (vbl) CLI Tool - v0.3.0\n\n";
+            echo "Usage:\n";
+            echo "  vbl make:addon <id> --title=\"...\" [--dir=path]       Scaffold a new add-on\n";
+            echo "  vbl make:model <Name> [--table=...] [--addon=path]   Generate an Eloquent model\n";
+            echo "  vbl make:migration <name> [--addon=path]             Generate a timestamped migration\n";
+            echo "  vbl make:hook <Name> [--hook=name] [--order=10]      Generate a PHP hook listener\n";
+            echo "  vbl make:api <Name> [--controller=...] [--write]     Generate an API controller\n";
+            echo "  vbl make:template <name> [--hook] [--addon=path]     Generate a template or template hook\n";
+            echo "  vbl validate [path]                                  Validate manifest and conventions\n";
+            echo "  vbl build [path] [out-dir]                           Compile add-on to product XML\n";
+            echo "  vbl dev [path] --target=/path/to/vb/core             Build, copy, and re-import in one step\n";
+            echo "  vbl package [path] [--output=dist/]                  Create an upload-ready zip for admins\n";
+            echo "  vbl release [version]                                Sync src/ to package/ and bump version\n";
+            echo "  vbl help                                             Display this help message\n";
+            exit(0);
+    }
+} catch (Throwable $e) {
+    echo "✗ Error: " . $e->getMessage() . "\n";
+    exit(1);
 }

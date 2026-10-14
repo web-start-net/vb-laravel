@@ -137,6 +137,7 @@ return new class extends Migration {
 - **CSRF & Write Protection**:
   - vBulletin 6 automatically validates `securitytoken` for all `POST /ajax/api` calls at the application gateway (`vB5_Frontend_ApplicationLight::execute()` -> `vB_Api_State::checkCSRF()`). Generated API wrappers rely on this native vB6 check.
   - Endpoints declared with `write: true` reject unauthenticated users (`userid === 0`) with `no_permission` by default (`guest: false`). To allow unauthenticated guest writes, explicitly declare `guest: true`.
+  - **Important**: Never call `write: true` API methods from vBulletin templates (`{vb:data}`) — CSRF validation is only enforced on `POST /ajax/api`. Template data calls are strictly read-only.
 
 ### 5.3 Template Hooks vs PHP Hooks
 - Template hooks rendered via `{vb:hook 'hookname'}` (such as `header_head`) must **not** use `#[Hook]`.
@@ -150,11 +151,30 @@ return new class extends Migration {
 The CLI tool and its AST parser are strictly dev-only (`require-dev`) and not included in production package distributions.
 
 ```bash
+# Scaffold a complete working add-on (passes validate + build immediately)
+php bin/vbl make:addon <id> --title="My Add-on" [--dir=path] [--folder=name]
+
+# Granular code generators
+php bin/vbl make:model <Name> [--table=...] [--addon=path]
+php bin/vbl make:migration <Name> [--addon=path]
+php bin/vbl make:hook <Name> [--hook=hookName] [--order=10] [--addon=path]
+php bin/vbl make:api <Name> [--controller=ctrl] [--action=act] [--write] [--addon=path]
+php bin/vbl make:template <Name> [--hook] [--addon=path]
+
 # Validate an add-on against schema, rules, and hook naming
 php bin/vbl validate path/to/addon
 
 # Compile templates, phrases, settings, migrations, and hooks into product_<id>.xml
 php bin/vbl build path/to/addon
+
+# One-command build + copy + re-import into local vBulletin test installation
+php bin/vbl dev path/to/addon [--target=/path/to/vb/core]
+
+# Package add-on into an upload-ready zip for forum administrators
+php bin/vbl package path/to/addon [--output=dist/]
+
+# Synchronize single source of truth (src/ -> package/) and bump version
+php bin/vbl release [version]
 ```
 
 ---
@@ -165,5 +185,30 @@ All add-ons must provide a `vb-addon.json` conforming to `schemas/vb-addon.schem
 - `id`: Lowercase alphanumeric string matching `^[a-z][a-z0-9]{2,24}$`.
 - `name` or `title`: Display title of the add-on.
 - `version`: Semver version string (e.g. `1.0.0`).
-- `runtime`: Caret constraint matching `^\^(\d+)\.(\d+)(?:\.(\d+))?$` (e.g. `^0.2`, `^0.10`, `^1.0`).
+- `runtime`: Caret constraint matching `^\^(\d+)\.(\d+)(?:\.(\d+))?$` (e.g. `^0.3`, `^1.0`).
 - `provider`: Fully-qualified class name of the add-on's service provider.
+
+---
+
+## 8. Reference Implementations
+
+The repository contains three complete, production-grade example add-ons demonstrating standard patterns:
+
+1. **`examples/bookmarks`** (`wsbookmarks`):
+   - Custom bookmarking table and migration.
+   - Eloquent model with `$dateFormat = 'U'`.
+   - Read and write API endpoints (`wsbookmarks:bookmark/get`, `wsbookmarks:bookmark/toggle`).
+   - Template hook injecting bookmark button into the frontend.
+
+2. **`examples/wsforms`** (`wsforms`):
+   - Advanced multi-table schema (forms, form fields, form submissions, submission values).
+   - Dynamic form validation and submissions.
+   - AdminCP options and phrases (`config/settings.php`, `lang/en.php`).
+   - Complex permissions using `#[Can]`.
+
+3. **`examples/ratings`** (`wsratings`):
+   - 5-star thread rating system built and verified by AI.
+   - Table `wsratings_ratings` tracking `nodeid`, `userid`, `rating` (1–5), `dateline`.
+   - API endpoints: `get` (stats & user rating), `rate` (authenticated `write: true`).
+   - Template hooks: `templates/hooks/conversation_toolbar.html` and `templates/hooks/header_head.html`.
+   - AdminCP setting `wsratings_enabled` and frontend phrases.

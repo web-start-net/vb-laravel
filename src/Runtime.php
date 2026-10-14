@@ -11,7 +11,7 @@ use Throwable;
 
 final class Runtime
 {
-    public const VERSION = '0.2.0';
+    public const VERSION = '0.3.0';
     public const UNLOADED = 'unloaded';
     public const BOOTING = 'booting';
     public const BOOTED = 'booted';
@@ -84,7 +84,7 @@ final class Runtime
         self::$bootedProviders = [];
     }
 
-    public static function boot(?string $vendorPath = null): Container
+    public static function boot(?string $vendorPath = null, ?string $triggerClass = null): Container
     {
         if (PHP_VERSION_ID < 80200) {
             throw new RuntimeException('VB Laravel Runtime requires PHP 8.2 or greater.');
@@ -122,7 +122,17 @@ final class Runtime
                 throw new RuntimeException("Runtime Composer autoloader not found: {$autoload}");
             }
 
-            require_once $autoload;
+            $composerLoader = require $autoload;
+            if ($triggerClass !== null) {
+                if (is_object($composerLoader) && method_exists($composerLoader, 'loadClass')) {
+                    $composerLoader->loadClass($triggerClass);
+                } elseif (class_exists(\Composer\Autoload\ClassLoader::class)) {
+                    foreach (\Composer\Autoload\ClassLoader::getRegisteredLoaders() as $loader) {
+                        $loader->loadClass($triggerClass);
+                    }
+                }
+            }
+
             self::$container = new Container();
             self::$state = self::BOOTED;
 

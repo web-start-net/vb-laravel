@@ -137,16 +137,16 @@ final class Migrator
         return basename($addonPath);
     }
 
-    private static function resolveInstance(string $file): ?Migration
+    private static function resolveInstance(string $file): ?object
     {
         $res = require $file;
-        if ($res instanceof Migration) {
+        if (is_object($res)) {
             return $res;
         }
 
         $classes = get_declared_classes();
         $last = end($classes);
-        if ($last && is_subclass_of($last, Migration::class)) {
+        if ($last && (is_subclass_of($last, Migration::class) || method_exists($last, 'up'))) {
             return new $last();
         }
 

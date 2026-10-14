@@ -1,0 +1,14 @@
+{
+  "id": "wsratings",
+  "name": "Thread Ratings",
+  "title": "Thread Ratings",
+  "version": "1.0.0",
+  "runtime": "^0.3",
+  "provider": "WsRatings\\RatingsServiceProvider",
+  "description": "Thread rating system for vBulletin 6 powered by vb-laravel",
+  "autoload": {
+    "psr-4": {
+      "WsRatings\\": "src/"
+    }
+  }
+}

@@ -2,12 +2,18 @@
 <product productid="vblaravel" active="1">
     <title>VB Laravel Runtime</title>
     <description>Lightweight Illuminate runtime and native vBulletin bridge.</description>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
     <url></url>
     <versioncheckurl></versioncheckurl>
     <dependencies></dependencies>
     <codes>
         <code version="0.2.0">
+            <installcode><![CDATA[if (version_compare(PHP_VERSION, '8.2.0', '<')) {
+    trigger_error('VB Laravel requires PHP 8.2 or higher. Current PHP version: ' . PHP_VERSION, E_USER_ERROR);
+}]]></installcode>
+            <uninstallcode><![CDATA[]]></uninstallcode>
+        </code>
+        <code version="0.3.0">
             <installcode><![CDATA[if (version_compare(PHP_VERSION, '8.2.0', '<')) {
     trigger_error('VB Laravel requires PHP 8.2 or higher. Current PHP version: ' . PHP_VERSION, E_USER_ERROR);
 }]]></installcode>

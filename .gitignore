@@ -11,4 +11,7 @@ Thumbs.db
 .env
 *.env
 examples/*/package/
+examples/*/dist/
 examples/*/src/_Generated/
+*.zip
+

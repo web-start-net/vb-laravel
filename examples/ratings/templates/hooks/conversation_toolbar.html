@@ -1,0 +1,14 @@
+<!-- wsratings:conversation_toolbar -->
+<vb:if condition="$vboptions['wsratings_enabled']">
+<div class="ws-thread-ratings" data-nodeid="{vb:raw conversation.nodeid}">
+    <span class="ws-rating-label">{vb:phrase wsratings_thread_rating}:</span>
+    <span class="ws-rating-stars" id="ws-ratings-stars-{vb:raw conversation.nodeid}">
+        <span class="ws-star" data-rating="1" title="1 {vb:phrase wsratings_star}">★</span>
+        <span class="ws-star" data-rating="2" title="2 {vb:phrase wsratings_stars}">★</span>
+        <span class="ws-star" data-rating="3" title="3 {vb:phrase wsratings_stars}">★</span>
+        <span class="ws-star" data-rating="4" title="4 {vb:phrase wsratings_stars}">★</span>
+        <span class="ws-star" data-rating="5" title="5 {vb:phrase wsratings_stars}">★</span>
+    </span>
+    <span class="ws-rating-avg" id="ws-ratings-avg-{vb:raw conversation.nodeid}"></span>
+</div>
+</vb:if>
