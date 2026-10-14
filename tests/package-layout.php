@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+ini_set('zend.assertions', '1');
+ini_set('assert.active', '1');
+
+function check(bool $condition, string $message = ''): void
+{
+    if (!$condition) {
+        throw new RuntimeException("Test assertion failed: " . ($message ?: 'Condition was false'));
+    }
+}
+
 final class PackageTestsApi
 {
     public function callApi(string $controller, string $method, array $arguments): array
@@ -56,35 +66,35 @@ $manifest = [
     'runtime' => '^0.1',
     'provider' => 'Vendor\\AddOn\\Provider',
 ];
-assert(array_keys($manifest) === ['id', 'title', 'version', 'runtime', 'provider']);
-assert($manifest['runtime'] === '^0.1');
+check(array_keys($manifest) === ['id', 'title', 'version', 'runtime', 'provider']);
+check($manifest['runtime'] === '^0.1');
 require_once $package . '/bootstrap.php';
 
-assert(function_exists('vb'));
-assert(class_exists(VbLaravel\AddonLoader::class, false));
-assert(VbLaravel\Runtime::state() === VbLaravel\Runtime::UNLOADED);
-assert(class_exists('Illuminate\\Container\\Container', false) === false);
-assert(vb()->user()['method'] === 'fetchCurrentUserinfo');
-assert(vb()->can('can_use_runtime') === true);
-assert(vb()->url('runtime_example', ['nodeid' => 2]) === 'runtime_example:nodeid=2');
-assert(VbLaravel\Runtime::state() === VbLaravel\Runtime::UNLOADED);
-assert(class_exists('Illuminate\\Container\\Container', false) === false);
+check(function_exists('vb'));
+check(class_exists(VbLaravel\AddonLoader::class, false));
+check(VbLaravel\Runtime::state() === VbLaravel\Runtime::UNLOADED);
+check(class_exists('Illuminate\\Container\\Container', false) === false);
+check(vb()->user()['method'] === 'fetchCurrentUserinfo');
+check(vb()->can('can_use_runtime') === true);
+check(vb()->url('runtime_example', ['nodeid' => 2]) === 'runtime_example:nodeid=2');
+check(VbLaravel\Runtime::state() === VbLaravel\Runtime::UNLOADED);
+check(class_exists('Illuminate\\Container\\Container', false) === false);
 
 try {
     VbLaravel\Runtime::container();
-    assert(false);
+    check(false);
 } catch (RuntimeException $exception) {
-    assert(str_contains($exception->getMessage(), 'Runtime::boot()'));
+    check(str_contains($exception->getMessage(), 'Runtime::boot()'));
 }
 
-assert(VbLaravel\Runtime::state() === VbLaravel\Runtime::UNLOADED);
+check(VbLaravel\Runtime::state() === VbLaravel\Runtime::UNLOADED);
 
 $first = VbLaravel\Runtime::boot();
 $second = VbLaravel\Runtime::boot();
 
-assert($first === $second);
-assert($first instanceof Illuminate\Container\Container);
-assert(VbLaravel\Runtime::state() === VbLaravel\Runtime::BOOTED);
-assert(VbLaravel\Runtime::container() === $first);
+check($first === $second);
+check($first instanceof Illuminate\Container\Container);
+check(VbLaravel\Runtime::state() === VbLaravel\Runtime::BOOTED);
+check(VbLaravel\Runtime::container() === $first);
 
 echo "Standalone package layout test passed.\n";

@@ -61,18 +61,36 @@ final class Compiler
             // Template hooks (templates/hooks/<hookname>.html)
             $tplHooksDir = $templatesDir . '/hooks';
             if (is_dir($tplHooksDir)) {
+                $hooksJsonPath = dirname(__DIR__, 2) . '/data/vb6-hooks.json';
+                $knownTemplateHooks = [];
+                if (is_file($hooksJsonPath)) {
+                    $hooksData = json_decode((string) file_get_contents($hooksJsonPath), true);
+                    $knownTemplateHooks = $hooksData['template_hooks'] ?? [];
+                }
+
                 foreach (glob($tplHooksDir . '/*.html') ?: [] as $hookTplFile) {
                     $hookName = basename($hookTplFile, '.html');
                     $hookContent = self::escapeCdata((string) file_get_contents($hookTplFile));
                     $fullHookTplName = $id . '_hook_' . $hookName;
                     $templatesXml .= "        <template name=\"{$fullHookTplName}\" templatetype=\"template\" date=\"1786800000\" username=\"VB Laravel\" version=\"{$version}\"><![CDATA[{$hookContent}]]></template>\n";
+
+                    $argsXml = '<arguments />';
+                    $hookVars = $knownTemplateHooks[$hookName]['variables'] ?? [];
+                    if (!empty($hookVars)) {
+                        $argMap = [];
+                        foreach ($hookVars as $v) {
+                            $argMap[$v] = [$v => 1];
+                        }
+                        $argsXml = '<arguments><![CDATA[' . serialize($argMap) . ']]></arguments>';
+                    }
+
                     $templateHooksXml .= "        <hook>\n" .
                         "            <hookname>{$hookName}</hookname>\n" .
                         "            <title>{$title} - {$hookName}</title>\n" .
                         "            <active>1</active>\n" .
                         "            <hookorder>10</hookorder>\n" .
                         "            <template>{$fullHookTplName}</template>\n" .
-                        "            <arguments />\n" .
+                        "            {$argsXml}\n" .
                         "        </hook>\n";
                 }
             }

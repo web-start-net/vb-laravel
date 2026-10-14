@@ -42,18 +42,12 @@ class RatingController
     public function rate(int $nodeid, int $rating): array
     {
         if ($rating < 1 || $rating > 5) {
-            return [
-                'error' => 'invalid_rating',
-                'message' => 'Rating must be an integer between 1 and 5.',
-            ];
+            throw new \vB_Exception_Api('invalid_rating');
         }
 
         $userId = vb()->userId();
         if ($userId === 0) {
-            return [
-                'error' => 'no_permission',
-                'message' => 'Unauthenticated users cannot rate threads.',
-            ];
+            throw new \vB_Exception_Api('no_permission');
         }
 
         $now = time();
@@ -74,6 +68,7 @@ class RatingController
             'success' => true,
             'nodeid' => $nodeid,
             'rating' => (int) $record->rating,
+            'user_rating' => (int) $record->rating,
             'total_ratings' => (int) ($stats->total_ratings ?? 0),
             'average_rating' => round((float) ($stats->average_rating ?? 0), 2),
         ];

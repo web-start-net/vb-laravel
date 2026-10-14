@@ -1,0 +1,146 @@
+<!-- wsratings:conversation_post_above -->
+{vb:set threadNodeId, {vb:if "!empty($conversation['nodeid'])", {vb:raw conversation.nodeid}, {vb:raw nodeid}}}
+<vb:if condition="!empty($threadNodeId)">
+<div class="ws-thread-ratings b-button-group__item" data-nodeid="{vb:raw threadNodeId}" id="ws-ratings-box-{vb:raw threadNodeId}">
+    <span class="ws-rating-label">{vb:phrase wsratings_thread_rating}:</span>
+    <span class="ws-rating-stars" id="ws-stars-{vb:raw threadNodeId}">
+        <span class="ws-star" data-rating="1" title="1 {vb:phrase wsratings_star}">★</span>
+        <span class="ws-star" data-rating="2" title="2 {vb:phrase wsratings_stars}">★</span>
+        <span class="ws-star" data-rating="3" title="3 {vb:phrase wsratings_stars}">★</span>
+        <span class="ws-star" data-rating="4" title="4 {vb:phrase wsratings_stars}">★</span>
+        <span class="ws-star" data-rating="5" title="5 {vb:phrase wsratings_stars}">★</span>
+    </span>
+    <span class="ws-rating-avg" id="ws-avg-{vb:raw threadNodeId}"></span>
+    <span class="ws-rating-msg" id="ws-msg-{vb:raw threadNodeId}"></span>
+</div>
+
+<script>
+(function() {
+    var nodeId = {vb:raw threadNodeId};
+    var container = document.getElementById('ws-ratings-box-' + nodeId);
+    if (!container) return;
+
+    var stars = container.querySelectorAll('.ws-star');
+    var avgSpan = document.getElementById('ws-avg-' + nodeId);
+    var msgSpan = document.getElementById('ws-msg-' + nodeId);
+
+    function getToken() {
+        if (typeof vBulletin !== 'undefined' && vBulletin.securitytoken) {
+            return vBulletin.securitytoken;
+        }
+        if (typeof SECURITYTOKEN !== 'undefined') {
+            return SECURITYTOKEN;
+        }
+        var input = document.querySelector('input[name="securitytoken"]');
+        return input ? input.value : '';
+    }
+
+    function getBaseUrl() {
+        if (typeof vBulletin !== 'undefined' && vBulletin.baseurl) {
+            return vBulletin.baseurl;
+        }
+        return '/';
+    }
+
+    function updateStarsDisplay(userRating) {
+        stars.forEach(function(s) {
+            var r = parseInt(s.getAttribute('data-rating'), 10);
+            if (userRating && r <= userRating) {
+                s.classList.add('active');
+            } else {
+                s.classList.remove('active');
+            }
+        });
+    }
+
+    function renderStats(stats) {
+        if (!stats) return;
+        if (stats.total_ratings > 0) {
+            avgSpan.textContent = '(' + stats.average_rating + ' / 5 · ' + stats.total_ratings + ' votes)';
+        } else {
+            avgSpan.textContent = '(No ratings yet)';
+        }
+        if (stats.user_rating) {
+            updateStarsDisplay(stats.user_rating);
+        }
+    }
+
+    // Hover effect
+    stars.forEach(function(s) {
+        s.addEventListener('mouseenter', function() {
+            var hoverRating = parseInt(this.getAttribute('data-rating'), 10);
+            stars.forEach(function(el) {
+                var r = parseInt(el.getAttribute('data-rating'), 10);
+                if (r <= hoverRating) {
+                    el.classList.add('hover');
+                } else {
+                    el.classList.remove('hover');
+                }
+            });
+        });
+    });
+
+    container.querySelector('.ws-rating-stars').addEventListener('mouseleave', function() {
+        stars.forEach(function(s) { s.classList.remove('hover'); });
+    });
+
+    // Click to rate
+    stars.forEach(function(s) {
+        s.addEventListener('click', function(e) {
+            e.preventDefault();
+            var ratingVal = parseInt(this.getAttribute('data-rating'), 10);
+            var token = getToken();
+
+            msgSpan.textContent = 'Submitting...';
+            msgSpan.className = 'ws-rating-msg loading';
+
+            var formData = new URLSearchParams();
+            formData.append('nodeid', nodeId);
+            formData.append('rating', ratingVal);
+            formData.append('securitytoken', token);
+
+            fetch(getBaseUrl() + 'ajax/api/wsratings.rating/rate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData.toString()
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.errors && data.errors.length) {
+                    var errCode = data.errors[0][0] || 'error';
+                    msgSpan.textContent = errCode === 'no_permission' ? 'Please log in to rate.' : 'Error: ' + errCode;
+                    msgSpan.className = 'ws-rating-msg error';
+                    return;
+                }
+                if (data.success) {
+                    updateStarsDisplay(data.rating);
+                    renderStats(data);
+                    msgSpan.textContent = 'Saved!';
+                    msgSpan.className = 'ws-rating-msg success';
+                    setTimeout(function() { msgSpan.textContent = ''; }, 3000);
+                }
+            })
+            .catch(function(err) {
+                msgSpan.textContent = 'Failed to submit rating.';
+                msgSpan.className = 'ws-rating-msg error';
+            });
+        });
+    });
+
+    // Fetch initial stats
+    fetch(getBaseUrl() + 'ajax/api/wsratings.rating/get?nodeid=' + nodeId, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (!data.errors) {
+            renderStats(data);
+        }
+    })
+    .catch(function() {});
+})();
+</script>
+</vb:if>

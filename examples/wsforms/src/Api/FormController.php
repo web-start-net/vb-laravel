@@ -18,7 +18,7 @@ class FormController
     {
         $form = Form::with('fields')->where('enabled', true)->find($formId);
         if (!$form) {
-            return ['error' => 'form_not_found'];
+            throw new \vB_Exception_Api('form_not_found');
         }
 
         return [
@@ -36,7 +36,10 @@ class FormController
     #[Can('canview', 'genericpermissions')]
     public function submit(int $formId, array $values): array
     {
-        $form = Form::where('enabled', true)->findOrFail($formId);
+        $form = Form::where('enabled', true)->find($formId);
+        if (!$form) {
+            throw new \vB_Exception_Api('form_not_found');
+        }
 
         $submission = FormSubmission::create([
             'form_id' => $form->id,

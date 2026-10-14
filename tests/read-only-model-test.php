@@ -2,12 +2,22 @@
 
 declare(strict_types=1);
 
+ini_set('zend.assertions', '1');
+ini_set('assert.active', '1');
+
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use VbLaravel\Runtime;
 use VbLaravel\Models\Node;
 use VbLaravel\Models\User;
 use VbLaravel\Models\Channel;
+
+function check(bool $condition, string $message = ''): void
+{
+    if (!$condition) {
+        throw new RuntimeException("Test assertion failed: " . ($message ?: 'Condition was false'));
+    }
+}
 
 echo "--- Testing ReadOnlyModel and ReadOnlyBuilder ---\n";
 
@@ -25,11 +35,7 @@ try {
     $updateThrown = true;
     echo "✓ Node::where()->update() threw BadMethodCallException: " . $e->getMessage() . "\n";
 }
-
-if (!$updateThrown) {
-    echo "✗ FAILED: Node::where()->update() did not throw BadMethodCallException!\n";
-    exit(1);
-}
+check($updateThrown, 'Node::where()->update() did not throw BadMethodCallException');
 
 // 2. Test Node::create() throws BadMethodCallException
 $createThrown = false;
@@ -39,11 +45,7 @@ try {
     $createThrown = true;
     echo "✓ Node::create() threw BadMethodCallException: " . $e->getMessage() . "\n";
 }
-
-if (!$createThrown) {
-    echo "✗ FAILED: Node::create() did not throw BadMethodCallException!\n";
-    exit(1);
-}
+check($createThrown, 'Node::create() did not throw BadMethodCallException');
 
 // 3. Test Node::where()->delete() throws BadMethodCallException
 $deleteThrown = false;
@@ -53,11 +55,7 @@ try {
     $deleteThrown = true;
     echo "✓ Node::where()->delete() threw BadMethodCallException: " . $e->getMessage() . "\n";
 }
-
-if (!$deleteThrown) {
-    echo "✗ FAILED: Node::where()->delete() did not throw BadMethodCallException!\n";
-    exit(1);
-}
+check($deleteThrown, 'Node::where()->delete() did not throw BadMethodCallException');
 
 // 4. Test Node::where()->increment() throws BadMethodCallException
 $incrementThrown = false;
@@ -67,11 +65,7 @@ try {
     $incrementThrown = true;
     echo "✓ Node::where()->increment() threw BadMethodCallException: " . $e->getMessage() . "\n";
 }
-
-if (!$incrementThrown) {
-    echo "✗ FAILED: Node::where()->increment() did not throw BadMethodCallException!\n";
-    exit(1);
-}
+check($incrementThrown, 'Node::where()->increment() did not throw BadMethodCallException');
 
 // 5. Test Node::where()->upsert() throws BadMethodCallException
 $upsertThrown = false;
@@ -81,11 +75,7 @@ try {
     $upsertThrown = true;
     echo "✓ Node::where()->upsert() threw BadMethodCallException: " . $e->getMessage() . "\n";
 }
-
-if (!$upsertThrown) {
-    echo "✗ FAILED: Node::where()->upsert() did not throw BadMethodCallException!\n";
-    exit(1);
-}
+check($upsertThrown, 'Node::where()->upsert() did not throw BadMethodCallException');
 
 echo "✓ ALL ReadOnlyModel write prevention tests PASSED!\n";
 exit(0);

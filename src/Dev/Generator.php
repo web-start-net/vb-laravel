@@ -268,7 +268,7 @@ class ItemController
     {
         \$item = Item::find(\$id);
         if (!\$item) {
-            return ['error' => 'item_not_found'];
+            throw new \\vB_Exception_Api('item_not_found');
         }
 
         return \$item->toArray();
@@ -303,13 +303,15 @@ PHP;
 declare(strict_types=1);
 
 return [
+    'group_title' => '{$title} Settings',
+    'displayorder' => 1000,
     'settings' => [
         '{$id}_enabled' => [
             'title' => 'Enable {$title}',
             'description' => 'Enable or disable {$title} functionality.',
             'type' => 'boolean',
             'default' => 1,
-            'order' => 10,
+            'displayorder' => 10,
         ],
     ],
 ];

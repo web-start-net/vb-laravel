@@ -85,13 +85,16 @@ All core models inherit from `ReadOnlyModel`. Calling `save()`, `update()`, `cre
 
 ---
 
-## 4. Migrations (`VbLaravel\Migrator`)
+## 4. Migrations & Table Prefix Behavior (`VbLaravel\Migrator`)
 
 Add-on database tables are created and managed via namespaced migrations using `Capsule::schema()` (no Laravel Facades).
 
 - **Location**: `<addon>/database/migrations/YYYY_MM_DD_HHMMSS_name.php`
 - **Tracking Table**: `<prefix>vbl_migrations`
-- **Format**:
+- **Table Prefix Convention**:
+  vBulletin installations configure a global table prefix in `core/includes/config.php` (e.g. `vb_` or `myforum_`). When VB Laravel boots the database, Capsule automatically adopts this prefix as its connection prefix.  
+  **Rule**: In migrations and Eloquent models, define table names **without** hardcoding the global DB prefix (e.g. `ws_bookmarks` or `wsratings_ratings`). Eloquent will automatically prefix queries with the global forum prefix if configured.
+- **Migration Format**:
 ```php
 <?php
 
@@ -104,12 +107,15 @@ use Illuminate\Database\Capsule\Manager as Capsule;
 return new class extends Migration {
     public function up(): void
     {
-        Capsule::schema()->create('ws_custom_table', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedInteger('userid')->index();
-            $table->string('title', 150);
-            $table->unsignedInteger('created_at');
-        });
+        if (!Capsule::schema()->hasTable('ws_custom_table')) {
+            Capsule::schema()->create('ws_custom_table', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedInteger('userid')->index();
+                $table->string('title', 150);
+                $table->unsignedInteger('created_at')->default(0);
+                $table->unsignedInteger('updated_at')->default(0);
+            });
+        }
     }
 
     public function down(): void
@@ -124,29 +130,138 @@ return new class extends Migration {
 
 ---
 
-## 5. Attributes & Hook Architecture
+## 5. Attributes, Hook Architecture & Frontend Bridge
 
 ### 5.1 PHP Hooks (`#[Hook]`)
 - Applied to methods in add-on listener classes.
-- Target verified vBulletin 6 hooks (e.g. `hookFrontendContentAfterAdd`, `hookFrontendContentBeforeAdd`, `hookUserAfterSave`).
+- Target verified vBulletin 6 hooks documented in `data/vb6-hooks.json` (e.g. `hookFrontendContentAfterAdd`, `hookFrontendPreheader`, `hookUserAfterSave`).
 - Handlers **must** accept parameters by reference: `public function onEvent(array &$params): void`.
 
-### 5.2 API & Permissions (`#[Api]`, `#[Can]`)
+### 5.2 API Controllers, Permissions & Error Convention (`#[Api]`, `#[Can]`)
 - `#[Api('package:controller', 'action', write: false, guest: false)]`: Declares an exposed API action.
 - `#[Can('permission', 'group')]`: Allowed **only** on `#[Api]` endpoints.
+- **Error Convention**:
+  - Always throw `\vB_Exception_Api('phrase_key')` on error (e.g. `throw new \vB_Exception_Api('no_permission');`).
+  - vBulletin's API gateway catches `\vB_Exception_Api` and translates it into standard JSON: `{"errors":[["phrase_key"]],"userid":...}`. Do not return custom `['error' => '...']` arrays.
 - **CSRF & Write Protection**:
   - vBulletin 6 automatically validates `securitytoken` for all `POST /ajax/api` calls at the application gateway (`vB5_Frontend_ApplicationLight::execute()` -> `vB_Api_State::checkCSRF()`). Generated API wrappers rely on this native vB6 check.
   - Endpoints declared with `write: true` reject unauthenticated users (`userid === 0`) with `no_permission` by default (`guest: false`). To allow unauthenticated guest writes, explicitly declare `guest: true`.
   - **Important**: Never call `write: true` API methods from vBulletin templates (`{vb:data}`) — CSRF validation is only enforced on `POST /ajax/api`. Template data calls are strictly read-only.
 
-### 5.3 Template Hooks vs PHP Hooks
-- Template hooks rendered via `{vb:hook 'hookname'}` (such as `header_head`) must **not** use `#[Hook]`.
-- Place template hook HTML files in `<addon>/templates/hooks/<hookname>.html`.
-- `vbl build` automatically routes these into `<hooks>` and `<templates>` in the generated product XML.
+### 5.3 Calling APIs from JavaScript
+To call an add-on API endpoint from the frontend browser:
+- **Endpoint URL**: `/ajax/api/<package>.<controller>/<action>` (e.g. `/ajax/api/wsratings.rating/rate`).
+- **CSRF Token**: vBulletin makes the active session token available in:
+  1. `vBulletin.securitytoken` (if global `vBulletin` object is present)
+  2. Global `SECURITYTOKEN`
+  3. Hidden form field: `document.querySelector('input[name="securitytoken"]')?.value`
+- **Copy-Paste JavaScript Pattern**:
+```javascript
+function callAddonApi(endpoint, data) {
+    var baseUrl = (typeof vBulletin !== 'undefined' && vBulletin.baseurl) ? vBulletin.baseurl : '/';
+    var token = (typeof vBulletin !== 'undefined' && vBulletin.securitytoken) 
+        ? vBulletin.securitytoken 
+        : ((typeof SECURITYTOKEN !== 'undefined') ? SECURITYTOKEN : '');
+
+    var body = new URLSearchParams(data);
+    body.append('securitytoken', token);
+
+    return fetch(baseUrl + 'ajax/api/' + endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: body.toString()
+    }).then(function(response) {
+        return response.json();
+    });
+}
+
+// Example usage:
+callAddonApi('wsratings.rating/rate', {
+    nodeid: 123,
+    rating: 5
+}).then(function(result) {
+    if (result.errors) {
+        console.error('API Error:', result.errors[0][0]);
+    } else {
+        console.log('Success:', result);
+    }
+});
+```
+
+### 5.4 Common Template Hooks & Variables
+Template hooks are rendered by vBulletin templates via `{vb:hook 'hookname'}`.
+Create template hooks under `<addon>/templates/hooks/<hookname>.html`.
+
+| Hook Name | Common Location | In Scope Variables |
+|---|---|---|
+| `header_head` | Inside `<head>` on all forum pages | `page`, `baseurl` |
+| `header_after_body_begin` | Immediately after `<body>` opens | `page`, `baseurl` |
+| `header_before_content` | Main content wrapper start | `page`, `baseurl` |
+| `conversation_display_controls` | Thread toolbar beside Follow/Share button | `nodeid`, `conversation`, `page` |
+| `conversation_before_display_controls` | Before the thread toolbar button group | `nodeid`, `page` |
+| `conversation_above_entry` | Above the thread reply box | `nodeid`, `page` |
+| `conversation_below_entry` | Below the thread reply box | `nodeid`, `page` |
+| `conversation_post_above` | Directly above an individual post/reply | `conversation`, `starter`, `postStatus` |
+| `conversation_post_below` | Directly below an individual post/reply | `conversation`, `starter`, `postStatus` |
+| `conversation_userstats` | User stats block in postbit | `conversation`, `userInfo` |
+| `forumitem_below_description` | Below channel description in forum list | `forum`, `avatar` |
+| `forumlist_before_categories` | Top of the forum channel list | `channel`, `forum` |
+| `footer_start` | Beginning of the page footer | `page`, `baseurl` |
+| `footer_end` | End of the page footer | `page`, `baseurl` |
+| `footer_before_body_end` | Right before `</body>` closes | `page`, `baseurl` |
 
 ---
 
-## 6. Developer Tooling (`vbl` CLI)
+## 6. Settings & Localization Formats
+
+### 6.1 AdminCP Options (`config/settings.php`)
+Settings declared in `config/settings.php` are compiled into native vBulletin option groups:
+```php
+<?php
+
+declare(strict_types=1);
+
+return [
+    'group_title' => 'My Add-on Settings',
+    'displayorder' => 1000,
+    'settings' => [
+        'myaddon_enabled' => [
+            'title' => 'Enable My Add-on',
+            'description' => 'Enable or disable add-on functionality.',
+            'type' => 'boolean', // boolean, integer, or free (string)
+            'default' => 1,
+            'displayorder' => 10,
+        ],
+    ],
+];
+```
+
+### 6.2 Phrases & Translation (`lang/en.php`)
+Phrase keys must follow vBulletin naming conventions:
+- `settinggroup_<id>`: Group title in AdminCP options.
+- `setting_<varname>_title`: Title of the individual setting.
+- `setting_<varname>_desc`: Description under the setting input.
+- `<id>_<key>`: Custom frontend phrases, accessible via `{vb:phrase myaddon_welcome}` or `vb()->phrase('myaddon_welcome')`.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+return [
+    'settinggroup_myaddon' => 'My Add-on Settings',
+    'setting_myaddon_enabled_title' => 'Enable My Add-on',
+    'setting_myaddon_enabled_desc' => 'Enable or disable add-on functionality.',
+    'myaddon_welcome' => 'Welcome to My Add-on',
+];
+```
+
+---
+
+## 7. Developer Tooling (`vbl` CLI)
 
 The CLI tool and its AST parser are strictly dev-only (`require-dev`) and not included in production package distributions.
 
@@ -179,7 +294,7 @@ php bin/vbl release [version]
 
 ---
 
-## 7. Add-on Manifest Schema (`vb-addon.json`)
+## 8. Add-on Manifest Schema (`vb-addon.json`)
 
 All add-ons must provide a `vb-addon.json` conforming to `schemas/vb-addon.schema.json`:
 - `id`: Lowercase alphanumeric string matching `^[a-z][a-z0-9]{2,24}$`.
@@ -190,19 +305,20 @@ All add-ons must provide a `vb-addon.json` conforming to `schemas/vb-addon.schem
 
 ---
 
-## 8. Reference Implementations
+## 9. Reference Implementations
 
 The repository contains three complete, production-grade example add-ons demonstrating standard patterns:
 
 1. **`examples/bookmarks`** (`wsbookmarks`):
    - Custom bookmarking table and migration.
-   - Eloquent model with `$dateFormat = 'U'`.
-   - Read and write API endpoints (`wsbookmarks:bookmark/get`, `wsbookmarks:bookmark/toggle`).
-   - Template hook injecting bookmark button into the frontend.
+   - Eloquent model `Bookmark` with `$dateFormat = 'U'`.
+   - Read and write API endpoints (`wsbookmarks:bookmark/get`, `wsbookmarks:bookmark/toggle`) with `\vB_Exception_Api` error convention.
+   - PHP hook `hookFrontendPreheader` for lazy datastore check.
+   - Template hook in `header_head.html`.
 
 2. **`examples/wsforms`** (`wsforms`):
    - Advanced multi-table schema (forms, form fields, form submissions, submission values).
-   - Dynamic form validation and submissions.
+   - Dynamic form validation and submissions with `\vB_Exception_Api`.
    - AdminCP options and phrases (`config/settings.php`, `lang/en.php`).
    - Complex permissions using `#[Can]`.
 
@@ -210,5 +326,7 @@ The repository contains three complete, production-grade example add-ons demonst
    - 5-star thread rating system built and verified by AI.
    - Table `wsratings_ratings` tracking `nodeid`, `userid`, `rating` (1–5), `dateline`.
    - API endpoints: `get` (stats & user rating), `rate` (authenticated `write: true`).
-   - Template hooks: `templates/hooks/conversation_toolbar.html` and `templates/hooks/header_head.html`.
+   - Interactive star rating JavaScript with CSRF securitytoken handling.
+   - Template hooks: `templates/hooks/conversation_display_controls.html` and `templates/hooks/header_head.html`.
    - AdminCP setting `wsratings_enabled` and frontend phrases.
+

@@ -2,10 +2,20 @@
 
 declare(strict_types=1);
 
+ini_set('zend.assertions', '1');
+ini_set('assert.active', '1');
+
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../src/Dev/Compiler.php';
 
 use VbLaravel\Dev\Compiler;
+
+function check(bool $condition, string $message = ''): void
+{
+    if (!$condition) {
+        throw new RuntimeException("Test assertion failed: " . ($message ?: 'Condition was false'));
+    }
+}
 
 echo "--- Testing Compiler AST Discovery and Error Handling ---\n";
 
@@ -38,20 +48,20 @@ PHP;
 file_put_contents($tmpDir . '/src/TestController.php', $code1);
 
 $apis = Compiler::discoverApis($tmpDir . '/src');
-assert(isset($apis['test:widget']), 'Discovered API controller');
+check(isset($apis['test:widget']), 'Discovered API controller');
 $endpoint = $apis['test:widget'][0];
 
-assert($endpoint['action'] === 'save', 'Action is save');
-assert($endpoint['write'] === true, 'Write flag is true');
-assert($endpoint['canPerm'] === 'canview', 'Can permission is canview');
+check($endpoint['action'] === 'save', 'Action is save');
+check($endpoint['write'] === true, 'Write flag is true');
+check($endpoint['canPerm'] === 'canview', 'Can permission is canview');
 
 // Check parameter fidelity: no synthetic defaults, comma-containing default preserved!
 $sig = implode(', ', $endpoint['paramSignatures']);
 echo "Discovered signature: {$sig}\n";
-assert(str_contains($sig, 'string $tags = "foo, bar, baz"'), 'Default containing commas preserved');
-assert(str_contains($sig, 'array $opts = [1, 2]'), 'Array default preserved');
-assert(str_starts_with($sig, 'int $id'), 'No injected default for int $id');
-assert(!str_contains($sig, 'int $id = 0'), 'int $id must not have injected = 0 default');
+check(str_contains($sig, 'string $tags = "foo, bar, baz"'), 'Default containing commas preserved');
+check(str_contains($sig, 'array $opts = [1, 2]'), 'Array default preserved');
+check(str_starts_with($sig, 'int $id'), 'No injected default for int $id');
+check(!str_contains($sig, 'int $id = 0'), 'int $id must not have injected = 0 default');
 echo "✓ Multi-line, named-arg, use-imported, and comma-containing default tests PASSED!\n";
 
 // 2. Test: unknown attribute throws build ERROR
@@ -76,7 +86,7 @@ try {
     $caughtUnknown = true;
     echo "✓ Unknown attribute threw build ERROR: " . $e->getMessage() . "\n";
 }
-assert($caughtUnknown, 'Unknown attribute must throw build error');
+check($caughtUnknown, 'Unknown attribute must throw build error');
 
 // 3. Test: #[Can] without #[Api] throws build ERROR
 unlink($tmpDir . '/src/BadListener.php');
@@ -103,7 +113,7 @@ try {
     $caughtCanWithoutApi = true;
     echo "✓ #[Can] without #[Api] threw build ERROR: " . $e->getMessage() . "\n";
 }
-assert($caughtCanWithoutApi, '#[Can] without #[Api] must throw build error');
+check($caughtCanWithoutApi, '#[Can] without #[Api] must throw build error');
 unlink($tmpDir . '/src/OrphanCan.php');
 
 // 4. Test: #[Api] guest flag default (false) and explicit (true)
@@ -130,9 +140,9 @@ class GuestTestController
 PHP;
 file_put_contents($tmpDir . '/src/GuestTestController.php', $code4);
 $guestApis = Compiler::discoverApis($tmpDir . '/src');
-assert(isset($guestApis['test:guest']), 'Discovered test:guest controller');
-assert($guestApis['test:guest'][0]['guest'] === false, 'Default guest flag is false');
-assert($guestApis['test:guest'][1]['guest'] === true, 'Explicit guest flag is true');
+check(isset($guestApis['test:guest']), 'Discovered test:guest controller');
+check($guestApis['test:guest'][0]['guest'] === false, 'Default guest flag is false');
+check($guestApis['test:guest'][1]['guest'] === true, 'Explicit guest flag is true');
 unlink($tmpDir . '/src/GuestTestController.php');
 echo "✓ #[Api] guest flag (default false, explicit true) verified!\n";
 

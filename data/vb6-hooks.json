@@ -1,0 +1,1119 @@
+{
+    "version": "6.2.2",
+    "php_hooks": {
+        "hookAdminCPUserExternalConnections": {
+            "params": [
+                "userid",
+                "externalConnections"
+            ],
+            "sources": [
+                "user.php",
+                "user.php"
+            ]
+        },
+        "hookAdminClearedCache": {
+            "params": [],
+            "sources": [
+                "misc.php",
+                "db.php",
+                "misc.php",
+                "db.php"
+            ]
+        },
+        "hookAdminSettingsSelectOptions": {
+            "params": [
+                "settingid",
+                "optioncode",
+                "options"
+            ],
+            "sources": [
+                "adminfunctions_options.php",
+                "adminfunctions_options.php"
+            ]
+        },
+        "hookCanUnvoteNode": {
+            "params": [
+                "currentUserid",
+                "votetype",
+                "votegroup",
+                "node",
+                "can"
+            ],
+            "sources": [
+                "nodevote.php",
+                "nodevote.php"
+            ]
+        },
+        "hookCanVoteNode": {
+            "params": [
+                "currentUserid",
+                "votetype",
+                "votegroup",
+                "node",
+                "can"
+            ],
+            "sources": [
+                "nodevote.php",
+                "nodevote.php"
+            ]
+        },
+        "hookConvertUrlToBbcodeCallback": {
+            "params": [
+                "matches",
+                "replace",
+                "handled"
+            ],
+            "sources": [
+                "bbcode.php",
+                "bbcode.php"
+            ]
+        },
+        "hookExtendBbcodeTagList": {
+            "params": [
+                "tag_list"
+            ],
+            "sources": [
+                "bbcode.php",
+                "bbcode.php"
+            ]
+        },
+        "hookExternalLoginPostUserDelete": {
+            "params": [
+                "userid"
+            ],
+            "sources": [
+                "externallogin.php",
+                "externallogin.php"
+            ]
+        },
+        "hookFrontendAfterAjaxRender": {
+            "params": [
+                "styleid",
+                "template"
+            ],
+            "sources": [
+                "applicationlight.php"
+            ]
+        },
+        "hookFrontendBeforeOutput": {
+            "params": [
+                "styleid",
+                "pageHtml"
+            ],
+            "sources": [
+                "controller.php"
+            ]
+        },
+        "hookFrontendContentAfterAdd": {
+            "params": [
+                "iscomment",
+                "success",
+                "output",
+                "nodeid"
+            ],
+            "sources": [
+                "ajax.php",
+                "createcontent.php"
+            ]
+        },
+        "hookFrontendContentAfterUpdate": {
+            "params": [
+                "apilib",
+                "nodeid",
+                "updateResult"
+            ],
+            "sources": [
+                "createcontent.php"
+            ]
+        },
+        "hookFrontendContentBeforeAdd": {
+            "params": [
+                "iscomment",
+                "altreturn",
+                "apilib",
+                "data",
+                "options"
+            ],
+            "sources": [
+                "ajax.php",
+                "createcontent.php"
+            ]
+        },
+        "hookFrontendContentBeforeUpdate": {
+            "params": [
+                "apilib",
+                "nodeid",
+                "data",
+                "altreturn"
+            ],
+            "sources": [
+                "createcontent.php"
+            ]
+        },
+        "hookFrontendOn404": {
+            "params": [
+                "path",
+                "normalErrorResponse"
+            ],
+            "sources": [
+                "applicationabstract.php"
+            ]
+        },
+        "hookFrontendPreheader": {
+            "params": [
+                "preheaderHtml"
+            ],
+            "sources": [
+                "applicationabstract.php"
+            ]
+        },
+        "hookFrontendPrepareRestoreSession": {
+            "params": [
+                "method"
+            ],
+            "sources": [
+                "interfaceabstract.php"
+            ]
+        },
+        "hookGetBbcodeRenderOptions": {
+            "params": [
+                "context",
+                "renderOptions"
+            ],
+            "sources": [
+                "bbcode.php",
+                "wysiwyg.php",
+                "bbcode.php",
+                "bbcode.php"
+            ]
+        },
+        "hookGetPageMain": {
+            "params": [
+                "pageid",
+                "useraction",
+                "page",
+                "pagekey",
+                "arguments"
+            ],
+            "sources": [
+                "page.php"
+            ]
+        },
+        "hookGetRouteMain": {
+            "params": [
+                "pathInfo",
+                "queryString",
+                "anchor",
+                "route"
+            ],
+            "sources": [
+                "route.php",
+                "route.php"
+            ]
+        },
+        "hookGetRoutingControllerActionWhitelist": {
+            "params": [
+                "whitelist"
+            ],
+            "sources": [
+                "routing.php"
+            ]
+        },
+        "hookLibraryPageGetHomePages": {
+            "params": [
+                "pageguids"
+            ],
+            "sources": [
+                "page.php",
+                "page.php"
+            ]
+        },
+        "hookLoginInternal": {
+            "params": [
+                "loginstate",
+                "result",
+                "userInfo",
+                "username",
+                "password",
+                "extraAuthInfo",
+                "logintype"
+            ],
+            "sources": [
+                "user.php",
+                "user.php"
+            ]
+        },
+        "hookNodevoteAggregateChange": {
+            "params": [
+                "nodeids",
+                "votetypeids",
+                "delta"
+            ],
+            "sources": [
+                "nodevote.php",
+                "nodevote.php"
+            ]
+        },
+        "hookProcessLogout": {
+            "params": [
+                "result",
+                "userinfo",
+                "currentUserinfo"
+            ],
+            "sources": [
+                "user.php",
+                "user.php"
+            ]
+        },
+        "hookProcessNewLogin": {
+            "params": [
+                "result",
+                "logintype",
+                "cssprefs",
+                "userinfo"
+            ],
+            "sources": [
+                "user.php",
+                "user.php"
+            ]
+        },
+        "hookRegistrationBeforeSave": {
+            "params": [
+                "this",
+                "data",
+                "abort"
+            ],
+            "sources": [
+                "registration.php"
+            ]
+        },
+        "hookRssFeedMapItem": {
+            "params": [
+                "url",
+                "type",
+                "in_item",
+                "out_item"
+            ],
+            "sources": [
+                "rssfeed.php",
+                "rssfeed.php",
+                "rssfeed.php",
+                "rssfeed.php"
+            ]
+        },
+        "hookRssFetchXmlPreGet": {
+            "params": [
+                "url",
+                "vurl"
+            ],
+            "sources": [
+                "class_rss_poster.php",
+                "rssfeed.php",
+                "class_rss_poster.php",
+                "rssfeed.php"
+            ]
+        },
+        "hookSearchOptions": {
+            "params": [
+                "options"
+            ],
+            "sources": [
+                "options.php",
+                "options.php"
+            ]
+        },
+        "hookSetPageViewPermissionExcludes": {
+            "params": [
+                "excludeFromPagePermControl"
+            ],
+            "sources": [
+                "route.php",
+                "route.php"
+            ]
+        },
+        "hookSetRouteWhitelist": {
+            "params": [
+                "whitelistRoute"
+            ],
+            "sources": [
+                "route.php",
+                "route.php"
+            ]
+        },
+        "hookShowExternalLoginButton": {
+            "params": [
+                "buttons"
+            ],
+            "sources": [
+                "externallogin.php",
+                "externallogin.php"
+            ]
+        },
+        "hookShowExternalRegistrationBlock": {
+            "params": [
+                "blocks"
+            ],
+            "sources": [
+                "externallogin.php",
+                "externallogin.php"
+            ]
+        },
+        "hookTemplateGroupPhrase": {
+            "params": [
+                "groups"
+            ],
+            "sources": [
+                "template.php",
+                "template.php"
+            ]
+        },
+        "hookUserAfterActivation": {
+            "params": [
+                "userid",
+                "newuser",
+                "userIsModerated"
+            ],
+            "sources": [
+                "user.php",
+                "user.php"
+            ]
+        },
+        "hookUserAfterSave": {
+            "params": [
+                "adminoverride",
+                "userid",
+                "newuser",
+                "emailVerificationRequired",
+                "userIsModerated"
+            ],
+            "sources": [
+                "user.php",
+                "user.php",
+                "user.php",
+                "user.php"
+            ]
+        },
+        "hookUserModerationApproved": {
+            "params": [
+                "userid"
+            ],
+            "sources": [
+                "user.php",
+                "user.php"
+            ]
+        },
+        "hookWebApiAfterCreateSessionNew": {
+            "params": [
+                "userid"
+            ],
+            "sources": [
+                "webapi.php",
+                "webapi.php"
+            ]
+        }
+    },
+    "template_hooks": {
+        "blog_display_controls": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "channel_display_controls": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "conversation_above_entry": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "conversation",
+                "page"
+            ]
+        },
+        "conversation_above_usertitle": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "conversation_before_display_controls": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "conversation",
+                "page"
+            ]
+        },
+        "conversation_below_entry": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "conversation",
+                "page"
+            ]
+        },
+        "conversation_comment_above": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "conversation",
+                "comment"
+            ]
+        },
+        "conversation_comment_below": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "conversation",
+                "comment"
+            ]
+        },
+        "conversation_display_controls": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "conversation",
+                "page"
+            ]
+        },
+        "conversation_footerleft": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "conversation_footerright": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "conversation_post_above": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "conversation",
+                "starter",
+                "postStatus"
+            ]
+        },
+        "conversation_post_below": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "conversation",
+                "starter",
+                "postStatus"
+            ]
+        },
+        "conversation_sharing": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "conversation",
+                "starterPost"
+            ]
+        },
+        "conversation_userstats": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "conversation",
+                "userInfo"
+            ]
+        },
+        "editor_additional_panels": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "editor_after_primary_toolbar_icons": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "editor_after_secondary_toolbar_icons": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "editor_input_polls_options": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "following_list_end": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "following_list_start": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "footer_before_body_end": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "page",
+                "baseurl"
+            ]
+        },
+        "footer_copyright": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "page",
+                "baseurl"
+            ]
+        },
+        "footer_end": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "page",
+                "baseurl"
+            ]
+        },
+        "footer_left": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "footer_right": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "footer_start": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "page",
+                "baseurl"
+            ]
+        },
+        "forumitem_below_description": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "forum",
+                "avatar"
+            ]
+        },
+        "forumlist_before_categories": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "channel",
+                "forum"
+            ]
+        },
+        "group_display_controls": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "header_after_body_begin": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "page",
+                "baseurl"
+            ]
+        },
+        "header_before_content": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "page",
+                "baseurl"
+            ]
+        },
+        "header_before_notices": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "header_head": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "page",
+                "baseurl"
+            ]
+        },
+        "header_navright": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "header_navright_after_username": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "header_tabbar": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "page",
+                "baseurl"
+            ]
+        },
+        "header_toolbar": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "page",
+                "baseurl"
+            ]
+        },
+        "header_topusermenu_after_profile": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "header_topusermenu_external_login": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "profile_about_general": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "userInfo"
+            ]
+        },
+        "profile_about_links": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "profile_about_posts": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "userInfo"
+            ]
+        },
+        "profile_about_sectionend": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "profile_about_vms": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "profile_activity_end": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "profile_activity_start": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "profile_basics_end": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "profile_contacts_end": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "profile_sidebar_1": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "userInfo",
+                "page"
+            ]
+        },
+        "profile_sidebar_2": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "userInfo",
+                "page"
+            ]
+        },
+        "profile_sidebar_3": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "userInfo",
+                "page"
+            ]
+        },
+        "profile_sidebar_4": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": [
+                "userInfo",
+                "page"
+            ]
+        },
+        "profile_tabs_1": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "profile_tabs_3": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "register_with_thirdparty": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "settings_account": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "settings_account_externallogin_link": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "settings_notifications": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "settings_privacy": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "settings_privacy_profile": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "settings_profile": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "settings_tab_list": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "settings_tab_page": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "subscribed_no_subs": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "subscribed_start": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "topic_before_item": {
+            "templates": [
+                "vbulletin-style",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "topic_item_icon_start": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        },
+        "topics_after_sticky": {
+            "templates": [
+                "vbulletin-style-five",
+                "vbulletin-style",
+                "vbulletin-style-five",
+                "vbulletin-style"
+            ],
+            "variables": []
+        }
+    }
+}

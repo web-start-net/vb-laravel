@@ -1,0 +1,14 @@
+{
+  "id": "wsthanks",
+  "name": "Post Thanks",
+  "title": "Post Thanks",
+  "version": "0.1.0",
+  "runtime": "^0.3",
+  "provider": "WsThanks\\ThanksServiceProvider",
+  "description": "Post Thanks add-on for vBulletin 6 powered by vb-laravel",
+  "autoload": {
+    "psr-4": {
+      "WsThanks\\": "src/"
+    }
+  }
+}

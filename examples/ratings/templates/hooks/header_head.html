@@ -14,14 +14,38 @@
 .ws-thread-ratings .ws-rating-stars {
     display: inline-flex;
     cursor: pointer;
-    color: #cbd5e1;
+    user-select: none;
+    font-size: 16px;
+    line-height: 1;
 }
-.ws-thread-ratings .ws-star:hover,
+.ws-thread-ratings .ws-star {
+    color: #cbd5e1;
+    transition: color 0.15s ease, transform 0.1s ease;
+    padding: 0 1px;
+}
+.ws-thread-ratings .ws-star.hover,
 .ws-thread-ratings .ws-star.active {
     color: #f59e0b;
 }
+.ws-thread-ratings .ws-star:active {
+    transform: scale(1.2);
+}
 .ws-thread-ratings .ws-rating-avg {
     font-size: 12px;
+    color: #64748b;
+}
+.ws-thread-ratings .ws-rating-msg {
+    font-size: 11px;
+    margin-left: 4px;
+    font-weight: 500;
+}
+.ws-thread-ratings .ws-rating-msg.success {
+    color: #16a34a;
+}
+.ws-thread-ratings .ws-rating-msg.error {
+    color: #dc2626;
+}
+.ws-thread-ratings .ws-rating-msg.loading {
     color: #64748b;
 }
 </style>

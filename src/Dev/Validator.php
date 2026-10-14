@@ -10,23 +10,53 @@ use PhpParser\ParserFactory;
 
 final class Validator
 {
-    private const KNOWN_VB6_PHP_HOOKS = [
-        'hookFrontendContentBeforeAdd',
-        'hookFrontendContentAfterAdd',
-        'hookFrontendContentBeforeUpdate',
-        'hookFrontendContentAfterUpdate',
-        'hookFrontendPreheader',
-        'hookUserAfterSave',
-        'hookRegistrationBeforeSave',
-        'hookUserModerationApproved',
-        'hookUserAfterActivation',
-        'hookGetRoutingControllerActionWhitelist',
-        'hookCanVoteNode',
-        'hookCanUnvoteNode',
-        'hookNodevoteAggregateChange',
-        'hookExternalLoginPostUserDelete',
-        'hookAdminCPUserExternalConnections',
-    ];
+    private static ?array $vb6HooksData = null;
+
+    /**
+     * Load the canonical vBulletin 6 hooks inventory (data/vb6-hooks.json).
+     */
+    public static function getHooksData(): array
+    {
+        if (self::$vb6HooksData !== null) {
+            return self::$vb6HooksData;
+        }
+
+        $file = dirname(__DIR__, 2) . '/data/vb6-hooks.json';
+        if (is_file($file)) {
+            $data = json_decode((string) file_get_contents($file), true);
+            if (is_array($data)) {
+                self::$vb6HooksData = $data;
+                return self::$vb6HooksData;
+            }
+        }
+
+        self::$vb6HooksData = ['php_hooks' => [], 'template_hooks' => []];
+        return self::$vb6HooksData;
+    }
+
+    /**
+     * Suggest the closest matching identifier from a list using Levenshtein distance.
+     */
+    public static function suggestClosest(string $needle, array $haystack): ?string
+    {
+        $best = null;
+        $bestDist = PHP_INT_MAX;
+        $needleLower = strtolower($needle);
+
+        foreach ($haystack as $candidate) {
+            $dist = levenshtein($needleLower, strtolower($candidate));
+            if ($dist < $bestDist) {
+                $bestDist = $dist;
+                $best = $candidate;
+            }
+        }
+
+        if ($best !== null && ($bestDist <= 5 || $bestDist <= (int) (strlen($needle) * 0.4))) {
+            return $best;
+        }
+
+        return null;
+    }
 
     public static function validate(string $addonPath): array
     {
@@ -79,6 +109,10 @@ final class Validator
             $errors[] = "Manifest requires a 'provider' class name.";
         }
 
+        $hooksData = self::getHooksData();
+        $validPhpHooks = array_keys($hooksData['php_hooks'] ?? []);
+        $validTemplateHooks = array_keys($hooksData['template_hooks'] ?? []);
+
         // Scan PHP files in src/ using AST
         $srcDir = $addonPath . '/src';
         if (is_dir($srcDir) && class_exists(ParserFactory::class)) {
@@ -126,20 +160,25 @@ final class Validator
                     foreach ($cls->getMethods() as $method) {
                         $hasApi = false;
                         $hasCan = false;
+                        $hasHook = false;
 
                         foreach ($method->attrGroups as $ag) {
                             foreach ($ag->attrs as $attr) {
                                 $name = $attr->name->toString();
                                 $resolved = $imports[$name] ?? $name;
                                 if (str_ends_with($resolved, '\\Hook') || $resolved === 'Hook') {
+                                    $hasHook = true;
                                     $hookArg = $attr->args[0] ?? null;
                                     if ($hookArg && $hookArg->value instanceof Node\Scalar\String_) {
                                         $hName = $hookArg->value->value;
                                         if (in_array($hName, ['init_startup', 'thread_post_complete', 'global_bootstrap'], true)) {
-                                            $errors[] = "Deprecated/invalid hook '{$hName}' in {$file}. Use real vB6 hook names.";
-                                        }
-                                        if (in_array($hName, ['header_head', 'header_topusermenu_external_login'], true)) {
-                                            $errors[] = "Template hook '{$hName}' found in #[Hook] attribute in {$file}. Place under templates/hooks/<hookname>.html instead.";
+                                            $errors[] = "Deprecated/invalid hook '{$hName}' on {$cls->name?->name}::{$method->name->name}() in {$file}. Use real vB6 hook names.";
+                                        } elseif (in_array($hName, $validTemplateHooks, true)) {
+                                            $errors[] = "Template hook '{$hName}' found in #[Hook] attribute on {$cls->name?->name}::{$method->name->name}() in {$file}. Place under templates/hooks/<hookname>.html instead.";
+                                        } elseif (!empty($validPhpHooks) && !in_array($hName, $validPhpHooks, true)) {
+                                            $closest = self::suggestClosest($hName, $validPhpHooks);
+                                            $sug = $closest ? " Did you mean '{$closest}'?" : "";
+                                            $errors[] = "Unknown PHP hook '{$hName}' on {$cls->name?->name}::{$method->name->name}() in {$file}.{$sug}";
                                         }
                                     }
                                 } elseif (str_ends_with($resolved, '\\Api') || $resolved === 'Api') {
@@ -152,10 +191,39 @@ final class Validator
                             }
                         }
 
+                        if ($hasHook) {
+                            // Validate by-reference array &$params parameter
+                            $methodParams = $method->getParams();
+                            $validByRef = false;
+                            if (!empty($methodParams)) {
+                                $p0 = $methodParams[0];
+                                if ($p0->byRef) {
+                                    $validByRef = true;
+                                }
+                            }
+                            if (!$validByRef) {
+                                $errors[] = "Hook handler {$cls->name?->name}::{$method->name->name}() in {$file} must accept an array by reference: 'public function {$method->name->name}(array &\$params): void'.";
+                            }
+                        }
+
                         if ($hasCan && !$hasApi) {
                             $errors[] = "#[Can] attribute found on {$cls->name?->name}::{$method->name->name}() in {$file} without #[Api]. #[Can] is only permitted on #[Api] endpoints.";
                         }
                     }
+                }
+            }
+        }
+
+        // Validate template hooks in templates/hooks/
+        $tplHooksDir = $addonPath . '/templates/hooks';
+        if (is_dir($tplHooksDir)) {
+            $tplHookFiles = glob($tplHooksDir . '/*.html') ?: [];
+            foreach ($tplHookFiles as $thFile) {
+                $thName = basename($thFile, '.html');
+                if (!empty($validTemplateHooks) && !in_array($thName, $validTemplateHooks, true)) {
+                    $closest = self::suggestClosest($thName, $validTemplateHooks);
+                    $sug = $closest ? " Did you mean '{$closest}'?" : "";
+                    $errors[] = "Unknown template hook '{$thName}' in {$thFile}.{$sug}";
                 }
             }
         }
